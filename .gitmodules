@@ -1,0 +1,12 @@
+[submodule "s2geometry"]
+	path = s2geometry
+	url = https://github.com/google/s2geometry.git
+[submodule "libosmium"]
+	path = libosmium
+	url = https://github.com/osmcode/libosmium.git
+[submodule "abseil-cpp"]
+	path = abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git
+[submodule "protozero"]
+	path = protozero
+	url = https://github.com/mapbox/protozero.git
