@@ -8,9 +8,17 @@ message Coordinate {
 message Edge {
     repeated Coordinate coordinates = 1;
     double length = 2;
-
+    uint64 source = 3;
+    uint64 target = 4;
 }
 
 message Node {
-    repeated uint64 adjacent_edges = 1;
+    Coordinate coordinate = 1;
+    repeated uint64 adjacent_edges = 2;
+}
+
+message Header {
+    repeated Edge edges = 1;
+    repeated Node nodes = 2;
+    bytes shape_index = 3;
 }
