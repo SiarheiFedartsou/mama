@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message Coordinate {
+    double x = 1;
+    double y = 2;
+}
+
+message Edge {
+    repeated Coordinate coordinates = 1;
+    double length = 2;
+
+}
+
+message Node {
+    repeated uint64 adjacent_edges = 1;
+}
