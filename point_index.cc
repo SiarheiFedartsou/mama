@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
 
     MutableS2ShapeIndex edge_index;
 
-      std::vector<std::vector<S2LatLng>> latlngs2;
+    std::vector<std::unique_ptr<S2Polyline>> polylines;
 
     std::unordered_map<std::string, size_t> u;
     for (const auto &edge : builder.edges) {
@@ -226,12 +226,14 @@ int main(int argc, char **argv) {
       for (const auto &node : edge.shape) {
         latlngs.emplace_back(node.asS2LatLng());
       }
-        latlngs2.emplace_back(std::move(latlngs));
+
+      auto polyline = std::make_unique<S2Polyline>(absl::Span<const S2LatLng>{latlngs});
+      polylines.emplace_back(std::move(polyline));
 
 
 
-      S2Polyline polyline{{latlngs2.back()}};
-      edge_index.Add(std::make_unique<S2Polyline::Shape>(&polyline));
+
+      edge_index.Add(std::make_unique<S2Polyline::Shape>(polylines.back().get()));
     }
 
     std::cerr << edge_index.SpaceUsed() << std::endl;
@@ -245,8 +247,8 @@ int main(int argc, char **argv) {
   //  // shape->Encode(&encoder);
   // }
   s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
-  //edge_index.Encode(&encoder);
-  //std::cerr << encoder.length() << std::endl;
+  edge_index.Encode(&encoder);
+  std::cerr << encoder.length() << std::endl;
     // for (auto& p: u) {
     //   std::cout << p.first << " " << p.second << std::endl;
     // }
