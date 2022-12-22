@@ -8,6 +8,11 @@
 #include "s2/s1chord_angle.h"
 #include "s2/s2closest_point_query.h"
 #include "s2/s2point_index.h"
+#include "s2/s2polyline.h"
+#include "s2/util/coding/coder.h"
+#include "s2/s2shapeutil_coding.h"
+#include "s2/mutable_s2shape_index.h"
+
 #include <osmium/geom/haversine.hpp>
 #include <osmium/handler/node_locations_for_ways.hpp>
 #include <osmium/index/map/flex_mem.hpp>
@@ -37,6 +42,10 @@ struct Coordinate {
 
   osmium::geom::Coordinates asOSMCoord() const {
     return osmium::geom::Coordinates(x, y);
+  }
+
+  S2LatLng asS2LatLng() const {
+    return S2LatLng::FromDegrees(y, x);
   }
 };
 
@@ -199,6 +208,11 @@ int main(int argc, char **argv) {
     GraphBuilder builder;
     builder.build(data_collector);
 
+
+    MutableS2ShapeIndex edge_index;
+
+      std::vector<std::vector<S2LatLng>> latlngs2;
+
     std::unordered_map<std::string, size_t> u;
     for (const auto &edge : builder.edges) {
       assert(edge.shape.size() > 1);
@@ -206,10 +220,36 @@ int main(int argc, char **argv) {
       S2CellId cellId{S2LatLng::FromDegrees(edge.shape[0].lat(), edge.shape[0].lng())};
       S2CellId tileCellId = cellId.parent(11);
       u[tileCellId.ToToken()]++;
+
+
+      std::vector<S2LatLng> latlngs;
+      for (const auto &node : edge.shape) {
+        latlngs.emplace_back(node.asS2LatLng());
+      }
+        latlngs2.emplace_back(std::move(latlngs));
+
+
+
+      S2Polyline polyline{{latlngs2.back()}};
+      edge_index.Add(std::make_unique<S2Polyline::Shape>(&polyline));
     }
-    for (auto& p: u) {
-      std::cout << p.first << " " << p.second << std::endl;
-    }
+
+    std::cerr << edge_index.SpaceUsed() << std::endl;
+//    edge_index.ForceBuild();
+
+   Encoder encoder;
+    encoder.Ensure(10000);
+  // //s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
+  // for (S2Shape* shape : edge_index) {
+  //   std::cerr << shape->num_edges() << std::endl;
+  //  // shape->Encode(&encoder);
+  // }
+  s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
+  //edge_index.Encode(&encoder);
+  //std::cerr << encoder.length() << std::endl;
+    // for (auto& p: u) {
+    //   std::cout << p.first << " " << p.second << std::endl;
+    // }
 
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';
