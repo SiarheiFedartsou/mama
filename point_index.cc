@@ -166,6 +166,7 @@ public:
   }
   std::vector<Edge> edges;
   std::unordered_map<ObjectID, Node> nodes;
+
 private:
 
   void addNode(ObjectID nodeId, Coordinate coordinate) {
@@ -244,6 +245,16 @@ struct TileBuilder {
   size_t addEdge(const Edge& edge) {
     auto pbfEdge = header.add_edges();
     pbfEdge->set_length(edge.distance);
+
+    std::vector<S2LatLng> latlngs;
+    for (const auto &node : edge.shape) {
+      latlngs.emplace_back(node.asS2LatLng());
+    }
+
+    auto polyline = std::make_unique<S2Polyline>(absl::Span<const S2LatLng>{latlngs});
+    polylines.emplace_back(std::move(polyline));
+    edge_index.Add(std::make_unique<S2Polyline::Shape>(polylines.back().get()));
+
     return header.edges_size() - 1;
   }
 
@@ -253,11 +264,17 @@ struct TileBuilder {
   }
 
 
+  void fixNeighbourTileNodes(const std::unordered_map<std::string, TileBuilder>& otherBuilders) {
+
+  }
+
   std::unordered_map<size_t, size_t> global_to_tile_edge_index;
   std::unordered_map<ObjectID, size_t> node_id_to_tile_node_index;
   
   MutableS2ShapeIndex edge_index;
   std::string tile_id;
+  std::vector<std::unique_ptr<S2Polyline>> polylines;
+
 
   tile::Header header;
 };
@@ -295,7 +312,6 @@ int main(int argc, char **argv) {
 
 
 
-    std::vector<std::unique_ptr<S2Polyline>> polylines;
 
     std::unordered_map<std::string, TileBuilder> tile_builders;
     for (const auto& [nodeId, node] : builder.nodes) {
@@ -320,25 +336,24 @@ int main(int argc, char **argv) {
       // }
 
     }
-    // for (const auto &edge : builder.edges) {
+
+    for (auto& [tile_id, tile_builder] : tile_builders) {
+      tile_builder.fixNeighbourTileNodes(tile_builders);
+
+
+      Encoder encoder;
+      s2shapeutil::CompactEncodeTaggedShapes(tile_builder.edge_index, &encoder);
+      tile_builder.edge_index.Encode(&encoder);
+      std::cerr << tile_id << " " << encoder.length() << std::endl;
+    }
+     // for (const auto &edge : builder.edges) {
     //   assert(edge.shape.size() > 1);
 
 
     //   S2CellId cellId{S2LatLng::FromDegrees(edge.shape[0].lat(), edge.shape[0].lng())};
     //   S2CellId tileCellId = cellId.parent(11);
 
-    //   std::vector<S2LatLng> latlngs;
-    //   for (const auto &node : edge.shape) {
-    //     latlngs.emplace_back(node.asS2LatLng());
-    //   }
 
-    //   auto polyline = std::make_unique<S2Polyline>(absl::Span<const S2LatLng>{latlngs});
-    //   polylines.emplace_back(std::move(polyline));
-
-
-
-
-    //   edge_index.Add(std::make_unique<S2Polyline::Shape>(polylines.back().get()));
     // }
 
 //     std::cerr << edge_index.SpaceUsed() << std::endl;
@@ -361,27 +376,5 @@ int main(int argc, char **argv) {
     std::cerr << e.what() << '\n';
     return 1;
   }
-
-  // // // Build an index containing random points anywhere on the Earth.
-  //  S2PointIndex<int> index;
-  // // for (int i = 0; i < absl::GetFlag(FLAGS_num_index_points); ++i) {
-  // //   index.Add(S2Testing::RandomPoint(), i);
-  // // }
-
-  // // Create a query to search within the given radius of a target point.
-  // S2ClosestPointQuery<int> query(&index);
-  // query.mutable_options()->set_max_distance(S1Angle::Radians(
-  //     S2Earth::KmToRadians(absl::GetFlag(FLAGS_query_radius_km))));
-
-  // // Repeatedly choose a random target point, and count how many index points
-  // // // are within the given radius of that point.
-  // // int64_t num_found = 0;
-  // // // for (int i = 0; i < absl::GetFlag(FLAGS_num_queries); ++i) {
-  // // //   S2ClosestPointQuery<int>::PointTarget target(S2Testing::RandomPoint());
-  // // //   num_found += query.FindClosestPoints(&target).size();
-  // // // }
-
-  // // std::printf("Found %" PRId64 " points in %d queries\n", num_found,
-  // //             absl::GetFlag(FLAGS_num_queries));
-  // return 0;
+  return 0;
 }
