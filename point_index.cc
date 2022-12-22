@@ -104,11 +104,10 @@ struct Edge {
   std::vector<Coordinate> shape;
 };
 
-// struct Node {
-//   ObjectID id;
-//   Coordinate coordinate;
-//   std::vector<Edge*> adjacent_edges;
-// }
+struct Node {
+  ObjectID id;
+  std::vector<size_t> adjacent_edges;
+};
 
 
 class GraphBuilder {
@@ -159,20 +158,35 @@ public:
     std::cout << "Number of edges: " << edges.size() << std::endl;
   }
   std::vector<Edge> edges;
-
+  std::unordered_map<ObjectID, Node> nodes;
 private:
+
+  void addNode(ObjectID nodeId) {
+      Node& node = nodes[nodeId];
+      node.id = nodeId;
+      node.adjacent_edges.push_back(edges.size() - 1);
+  }
+
   void addEdge(Edge &&edge, const Way& fromWay) {
+    auto fromId = edge.from;
+    auto toId = edge.to;
     if (fromWay.oneway_direction == OnewayDirection::Forward) {
       edges.push_back(std::move(edge));
+
+      addNode(fromId);
     } else if (fromWay.oneway_direction == OnewayDirection::Backward) {
       std::reverse(edge.shape.begin(), edge.shape.end());
       std::swap(edge.from, edge.to);
       edges.push_back(std::move(edge));
+      addNode(toId);
     } else {
       edges.push_back(edge);
+
+      addNode(fromId);
       std::reverse(edge.shape.begin(), edge.shape.end());
       std::swap(edge.from, edge.to);
       edges.push_back(std::move(edge));
+      addNode(toId);
     }
   }
 };
@@ -240,7 +254,6 @@ int main(int argc, char **argv) {
 //    edge_index.ForceBuild();
 
    Encoder encoder;
-    encoder.Ensure(10000);
   // //s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
   // for (S2Shape* shape : edge_index) {
   //   std::cerr << shape->num_edges() << std::endl;

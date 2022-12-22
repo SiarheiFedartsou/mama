@@ -1,25 +1,28 @@
 syntax = "proto3";
 package tile;
 
-message Coordinate {
-    double x = 1;
-    double y = 2;
-}
-
 message Edge {
-    repeated Coordinate coordinates = 1;
     double length = 2;
-    uint64 source = 3;
-    uint64 target = 4;
+
+    // if < 0, then the edge leaves tile and abs(...) correponds to the object in the `adjacent_edges_leaving_tile`
+    sint32 target = 4;
+
+    // id of shape in the `shape_spatial_index`
+    uint32 shape_id = 5;
 }
 
 message Node {
-    Coordinate coordinate = 1;
-    repeated uint64 adjacent_edges = 2;
+    repeated uint32 adjacent_edges = 2;
+}
+
+message NeighbourTileNode {
+    string tile_id = 1;
+    uint32 node_id = 2;
 }
 
 message Header {
     repeated Edge edges = 1;
     repeated Node nodes = 2;
-    bytes shape_index = 3;
+    repeated NeighbourTileNode neighbour_tile_nodes = 3;
+    bytes shape_spatial_index = 4;
 }
