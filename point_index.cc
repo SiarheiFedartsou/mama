@@ -12,7 +12,7 @@
 #include "s2/util/coding/coder.h"
 #include "s2/s2shapeutil_coding.h"
 #include "s2/mutable_s2shape_index.h"
-
+#include "tile.pb.h"
 #include <osmium/geom/haversine.hpp>
 #include <osmium/handler/node_locations_for_ways.hpp>
 #include <osmium/index/map/flex_mem.hpp>

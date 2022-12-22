@@ -3,3 +3,5 @@ cmake-build-debug/
 cmake-build-release/
 .idea/
 .cache
+*.osm.pbf
+.DS_Store

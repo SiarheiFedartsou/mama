@@ -1,4 +1,5 @@
 syntax = "proto3";
+package tile;
 
 message Coordinate {
     double x = 1;

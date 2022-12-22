@@ -17,9 +17,15 @@ add_subdirectory(s2geometry)
 include_directories(SYSTEM protozero/include)
 include_directories(SYSTEM libosmium/include)
 
-include_directories(SYSTEM /opt/homebrew/include)
-add_executable(point_index point_index.cc)
-target_link_libraries(point_index PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES}) 
+# protobuf
+find_package(Protobuf REQUIRED)
+include_directories(SYSTEM ${Protobuf_INCLUDE_DIRS})
+# for generated headers
+include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR})
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS tile.proto)
+
+add_executable(point_index point_index.cc  ${PROTO_SRCS} ${PROTO_HDRS})
+target_link_libraries(point_index PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 
 
 # 
