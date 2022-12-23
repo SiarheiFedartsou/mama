@@ -24,8 +24,11 @@ include_directories(SYSTEM ${Protobuf_INCLUDE_DIRS})
 include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS tile.proto)
 
-add_executable(point_index point_index.cc  ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(point_index PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
+add_executable(tilegen tilegen.cc  ${PROTO_SRCS} ${PROTO_HDRS})
+target_link_libraries(tilegen PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
+
+add_executable(mama mama.cc  ${PROTO_SRCS} ${PROTO_HDRS})
+target_link_libraries(mama PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 
 
 # 

@@ -21,7 +21,7 @@
 #include <osmium/util/progress_bar.hpp>
 #include <osmium/geom/geojson.hpp>
 #include <stdexcept>
-
+#include <fstream>
 
 constexpr int kTileLevel = 11;
 using ObjectID = unsigned long long;
@@ -267,7 +267,7 @@ struct TileBuilder {
 
 
 
-  void finish(const std::unordered_map<std::string, TileBuilder>& tile_builders) {
+  void finish(const std::unordered_map<std::string, TileBuilder>& tile_builders, const std::string& output_folder) {
       fixNeighbourTileNodes(tile_builders);
 
       Encoder encoder;
@@ -276,6 +276,9 @@ struct TileBuilder {
       *header.mutable_shape_spatial_index() = {encoder.base(), encoder.length()};
 
       std::cerr << tile_id << " " << header.ByteSizeLong() << std::endl;
+
+      std::ofstream out(output_folder + "/" + tile_id + ".tile");
+      header.SerializeToOstream(&out);
   }
 
   std::unordered_map<size_t, size_t> global_to_tile_edge_index;
@@ -312,10 +315,12 @@ private:
 };
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " OSMFILE\n";
+  if (argc != 3) {
+    std::cerr << "Usage: " << argv[0] << " OSMFILE OUTPUTFOLDER\n";
     return 1;
   }
+
+  std::string output_folder = argv[2];
 
   try {
     osmium::io::Reader reader{argv[1], osmium::osm_entity_bits::node |
@@ -353,7 +358,7 @@ int main(int argc, char **argv) {
     }
 
     for (auto& [tile_id, tile_builder] : tile_builders) {
-      tile_builder.finish(tile_builders);
+      tile_builder.finish(tile_builders, output_folder);
     }
 
   } catch (const std::exception &e) {
