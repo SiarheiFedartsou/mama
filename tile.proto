@@ -5,7 +5,7 @@ message Edge {
     double length = 2;
 
     // if < 0, then the edge leaves tile and abs(...) correponds to the object in the `adjacent_edges_leaving_tile`
-    sint32 target = 4;
+    sint32 target_node_id = 4;
 
     // id of shape in the `shape_spatial_index`
     uint32 shape_id = 5;

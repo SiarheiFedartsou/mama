@@ -20,12 +20,10 @@
 #include <osmium/visitor.hpp>
 #include <osmium/util/progress_bar.hpp>
 #include <osmium/geom/geojson.hpp>
-
-S2_DEFINE_int32(num_index_points, 10000, "Number of points to index");
-S2_DEFINE_int32(num_queries, 10000, "Number of queries");
-S2_DEFINE_double(query_radius_km, 100, "Query radius in kilometers");
+#include <stdexcept>
 
 
+constexpr int kTileLevel = 11;
 using ObjectID = unsigned long long;
 
 struct Coordinate {
@@ -111,7 +109,7 @@ struct Node {
 
   std::string getTileId() const {
     S2CellId cellId{S2LatLng::FromDegrees(coordinate.lat(), coordinate.lng())};
-    S2CellId tileCellId = cellId.parent(11);
+    S2CellId tileCellId = cellId.parent(kTileLevel);
     return tileCellId.ToToken();
   }
 };
@@ -211,15 +209,15 @@ struct TileBuilder {
     auto* pbfNode = header.mutable_nodes(getLocalNodeIndex(node));
 
     for (auto adjacent_edge_index: node.adjacent_edges) {
-      auto local_index = getLocalEdgeIndex(adjacent_edge_index, edges[adjacent_edge_index]);
+      auto local_index = getLocalEdgeIndex(adjacent_edge_index, edges[adjacent_edge_index], nodes);
       pbfNode->add_adjacent_edges(local_index);
     }
   }
 
-  size_t getLocalEdgeIndex(size_t global_index, const Edge& edge) {
+  size_t getLocalEdgeIndex(size_t global_index, const Edge& edge, const std::unordered_map<ObjectID, Node>& nodes) {
     auto local_index_itr = global_to_tile_edge_index.find(global_index);
     if (local_index_itr == global_to_tile_edge_index.end()) {
-      local_index_itr = global_to_tile_edge_index.emplace(global_index, addEdge(edge)).first;
+      local_index_itr = global_to_tile_edge_index.emplace(global_index, addEdge(edge, nodes)).first;
     }
     return local_index_itr->second;
   }
@@ -242,9 +240,10 @@ struct TileBuilder {
     return header.neighbour_tile_nodes_size() - 1;
   }
 
-  size_t addEdge(const Edge& edge) {
+  size_t addEdge(const Edge& edge, const std::unordered_map<ObjectID, Node>& nodes) {
     auto pbfEdge = header.add_edges();
     pbfEdge->set_length(edge.distance);
+    pbfEdge->set_target_node_id(getLocalNodeIndex(nodes.at(edge.to)));
 
     std::vector<S2LatLng> latlngs;
     for (const auto &node : edge.shape) {
@@ -253,7 +252,9 @@ struct TileBuilder {
 
     auto polyline = std::make_unique<S2Polyline>(absl::Span<const S2LatLng>{latlngs});
     polylines.emplace_back(std::move(polyline));
-    edge_index.Add(std::make_unique<S2Polyline::Shape>(polylines.back().get()));
+    auto shape_id = edge_index.Add(std::make_unique<S2Polyline::Shape>(polylines.back().get()));
+
+    pbfEdge->set_shape_id(shape_id);
 
     return header.edges_size() - 1;
   }
@@ -264,8 +265,17 @@ struct TileBuilder {
   }
 
 
-  void fixNeighbourTileNodes(const std::unordered_map<std::string, TileBuilder>& otherBuilders) {
 
+
+  void finish(const std::unordered_map<std::string, TileBuilder>& tile_builders) {
+      fixNeighbourTileNodes(tile_builders);
+
+      Encoder encoder;
+      s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
+      edge_index.Encode(&encoder);
+      *header.mutable_shape_spatial_index() = {encoder.base(), encoder.length()};
+
+      std::cerr << tile_id << " " << header.ByteSizeLong() << std::endl;
   }
 
   std::unordered_map<size_t, size_t> global_to_tile_edge_index;
@@ -277,6 +287,28 @@ struct TileBuilder {
 
 
   tile::Header header;
+
+private:
+  void fixNeighbourTileNodes(const std::unordered_map<std::string, TileBuilder>& otherBuilders) {
+    for (auto& pbfNode: *header.mutable_neighbour_tile_nodes()) {
+      auto tile_id = pbfNode.tile_id();
+      auto tile_id_end = tile_id.find("###");
+      auto other_tile_id = tile_id.substr(0, tile_id_end);
+      auto other_node_id = std::stoull(tile_id.substr(tile_id_end + 3));
+      auto other_tile_builder_itr = otherBuilders.find(other_tile_id);
+      if (other_tile_builder_itr == otherBuilders.end()) {
+        throw std::runtime_error("Could not find tile " + other_tile_id);
+      }
+      const auto& other_tile_builder = other_tile_builder_itr->second;
+      auto other_node_index = other_tile_builder.node_id_to_tile_node_index.find(other_node_id);
+      if (other_node_index == other_tile_builder.node_id_to_tile_node_index.end()) {
+        throw std::runtime_error("Could not find node " + std::to_string(other_node_id) + " in tile " + other_tile_id);
+        continue;
+      }
+      pbfNode.set_tile_id(other_tile_id);
+      pbfNode.set_node_id(other_node_index->second);
+    }
+  }
 };
 
 int main(int argc, char **argv) {
@@ -315,62 +347,14 @@ int main(int argc, char **argv) {
 
     std::unordered_map<std::string, TileBuilder> tile_builders;
     for (const auto& [nodeId, node] : builder.nodes) {
-      S2CellId cellId{S2LatLng::FromDegrees(node.coordinate.lat(), node.coordinate.lng())};
-      S2CellId tileCellId = cellId.parent(11);
-
       TileBuilder& tile_builder = tile_builders[node.getTileId()];
       tile_builder.tile_id = node.getTileId();
       tile_builder.addNode(node, builder.edges, builder.nodes);
-
-      // for (const auto& edge_index : node.adjacent_edges) {
-      //   // auto itr = tile_builder.globalToTileEdgeIndex.find(edge_index);
-      //   // if (itr == tile_builder.globalToTileEdgeIndex.end()) {
-          
-      //   // } else {
-
-      //   // }
-      //   // if (globalToTileEdgeIndex.find(edge_index) != globalToTileEdgeIndex.end()) {
-      //   //   continue;
-      //   // }
-      //   // add edge 
-      // }
-
     }
 
     for (auto& [tile_id, tile_builder] : tile_builders) {
-      tile_builder.fixNeighbourTileNodes(tile_builders);
-
-
-      Encoder encoder;
-      s2shapeutil::CompactEncodeTaggedShapes(tile_builder.edge_index, &encoder);
-      tile_builder.edge_index.Encode(&encoder);
-      std::cerr << tile_id << " " << encoder.length() << std::endl;
+      tile_builder.finish(tile_builders);
     }
-     // for (const auto &edge : builder.edges) {
-    //   assert(edge.shape.size() > 1);
-
-
-    //   S2CellId cellId{S2LatLng::FromDegrees(edge.shape[0].lat(), edge.shape[0].lng())};
-    //   S2CellId tileCellId = cellId.parent(11);
-
-
-    // }
-
-//     std::cerr << edge_index.SpaceUsed() << std::endl;
-// //    edge_index.ForceBuild();
-
-//    Encoder encoder;
-//   // //s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
-//   // for (S2Shape* shape : edge_index) {
-//   //   std::cerr << shape->num_edges() << std::endl;
-//   //  // shape->Encode(&encoder);
-//   // }
-//   s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
-//   edge_index.Encode(&encoder);
-//   std::cerr << encoder.length() << std::endl;
-    // for (auto& p: u) {
-    //   std::cout << p.first << " " << p.second << std::endl;
-    // }
 
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';
