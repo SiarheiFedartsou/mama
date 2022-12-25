@@ -22,6 +22,48 @@ private:
     EncodedS2ShapeIndex spatial_index_;
 };
 
+using TileId = uint64_t;
+
+struct EdgeId {
+    TileId tile_id;
+    uint32_t edge_index = 0;
+};
+
+struct PointOnGraph {
+    EdgeId edge_id;
+    // range 0-1
+    double offset = 0.0;
+};
+
+struct Coordinate {
+    double lat = 0.0;
+    double lon = 0.0;
+};
+
+struct Projection {
+    PointOnGraph point_on_graph;
+    double distance_m = 0.0;
+    Coordinate coordinate;
+};
+
+class Graph {
+public:
+    explicit Graph(const std::string& tiles_folder) : tiles_folder_(tiles_folder) {
+
+    }
+
+    std::vector<double> PathDistance(const PointOnGraph& from, const std::vector<PointOnGraph>& to) {
+        return {};
+    }
+
+    std::vector<Projection> Project(const Coordinate& coordinate, double radius_m) {
+        return {};
+    }
+
+private:
+    std::string tiles_folder_;
+};
+
 
 int main(int argc, char **argv) {
     Tile tile(argv[1]);

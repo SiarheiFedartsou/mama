@@ -16,7 +16,7 @@ message Node {
 }
 
 message NeighbourTileNode {
-    string tile_id = 1;
+    uint64 tile_id = 1;
     uint32 node_id = 2;
 }
 

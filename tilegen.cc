@@ -102,15 +102,17 @@ struct Edge {
   std::vector<Coordinate> shape;
 };
 
+using TileId = uint64_t;
+
 struct Node {
   Coordinate coordinate;
   ObjectID id;
   std::vector<size_t> adjacent_edges;
 
-  std::string getTileId() const {
+  TileId getTileId() const {
     S2CellId cellId{S2LatLng::FromDegrees(coordinate.lat(), coordinate.lng())};
     S2CellId tileCellId = cellId.parent(kTileLevel);
-    return tileCellId.ToToken();
+    return tileCellId.id();
   }
 };
 
@@ -235,8 +237,7 @@ struct TileBuilder {
 
   ssize_t addNeighbourTileNode(const Node& node) {
     auto pbfNode = header.add_neighbour_tile_nodes();
-    // TODO: hack
-    pbfNode->set_tile_id(node.getTileId() + "###" + std::to_string(node.id));
+    neighbour_nodes.emplace_back(NeighbourNode{node.getTileId(), node.id});
     return header.neighbour_tile_nodes_size() - 1;
   }
 
@@ -267,7 +268,7 @@ struct TileBuilder {
 
 
 
-  void finish(const std::unordered_map<std::string, TileBuilder>& tile_builders, const std::string& output_folder) {
+  void finish(const std::unordered_map<TileId, TileBuilder>& tile_builders, const std::string& output_folder) {
       fixNeighbourTileNodes(tile_builders);
 
       Encoder encoder;
@@ -277,7 +278,7 @@ struct TileBuilder {
 
       std::cerr << tile_id << " " << header.ByteSizeLong() << std::endl;
 
-      std::ofstream out(output_folder + "/" + tile_id + ".tile");
+      std::ofstream out(output_folder + "/" + std::to_string(tile_id) + ".tile");
       header.SerializeToOstream(&out);
   }
 
@@ -285,27 +286,36 @@ struct TileBuilder {
   std::unordered_map<ObjectID, size_t> node_id_to_tile_node_index;
   
   MutableS2ShapeIndex edge_index;
-  std::string tile_id;
+  TileId tile_id;
   std::vector<std::unique_ptr<S2Polyline>> polylines;
+
+  struct NeighbourNode {
+    TileId tile_id;
+    ObjectID node_id;
+  };
+
+  std::vector<NeighbourNode> neighbour_nodes;
 
 
   tile::Header header;
 
 private:
-  void fixNeighbourTileNodes(const std::unordered_map<std::string, TileBuilder>& otherBuilders) {
-    for (auto& pbfNode: *header.mutable_neighbour_tile_nodes()) {
-      auto tile_id = pbfNode.tile_id();
-      auto tile_id_end = tile_id.find("###");
-      auto other_tile_id = tile_id.substr(0, tile_id_end);
-      auto other_node_id = std::stoull(tile_id.substr(tile_id_end + 3));
+  void fixNeighbourTileNodes(const std::unordered_map<TileId, TileBuilder>& otherBuilders) {
+    assert(neighbour_nodes.size() == header.neighbour_tile_nodes_size());
+    for (size_t index = 0; index < neighbour_nodes.size(); ++index) {
+      auto& pbfNode = *header.mutable_neighbour_tile_nodes(index);
+      auto& neighbour_node = neighbour_nodes[index];
+      auto other_tile_id = neighbour_node.tile_id;
+      auto other_node_id = neighbour_node.node_id;
+
       auto other_tile_builder_itr = otherBuilders.find(other_tile_id);
       if (other_tile_builder_itr == otherBuilders.end()) {
-        throw std::runtime_error("Could not find tile " + other_tile_id);
+        throw std::runtime_error("Could not find tile " + std::to_string(other_tile_id));
       }
       const auto& other_tile_builder = other_tile_builder_itr->second;
       auto other_node_index = other_tile_builder.node_id_to_tile_node_index.find(other_node_id);
       if (other_node_index == other_tile_builder.node_id_to_tile_node_index.end()) {
-        throw std::runtime_error("Could not find node " + std::to_string(other_node_id) + " in tile " + other_tile_id);
+        throw std::runtime_error("Could not find node " + std::to_string(other_node_id) + " in tile " + std::to_string(other_tile_id));
         continue;
       }
       pbfNode.set_tile_id(other_tile_id);
@@ -315,6 +325,7 @@ private:
 };
 
 int main(int argc, char **argv) {
+  std::cerr << S2CellId::lsb_for_level(kTileLevel) << std::endl;;
   if (argc != 3) {
     std::cerr << "Usage: " << argv[0] << " OSMFILE OUTPUTFOLDER\n";
     return 1;
@@ -350,7 +361,7 @@ int main(int argc, char **argv) {
 
 
 
-    std::unordered_map<std::string, TileBuilder> tile_builders;
+    std::unordered_map<TileId, TileBuilder> tile_builders;
     for (const auto& [nodeId, node] : builder.nodes) {
       TileBuilder& tile_builder = tile_builders[node.getTileId()];
       tile_builder.tile_id = node.getTileId();
