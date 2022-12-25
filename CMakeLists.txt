@@ -3,14 +3,9 @@ project(mama)
 
 set(CMAKE_CXX_STANDARD 20)
 
-# add_subdirectory(abseil-cpp)
-# add_subdirectory(s2geometry)
-# include_directories(SYSTEM libosmium/include)
-
 find_package(EXPAT REQUIRED)
 find_package(BZip2 REQUIRED)
 find_package(ZLIB REQUIRED)
-# find_library(S2_LIBRARY NAMES s2 s2_geometry REQUIRED)
 add_subdirectory(abseil-cpp)
 # TODO: override set(CMAKE_CXX_STANDARD 20)
 add_subdirectory(s2geometry)
@@ -29,6 +24,3 @@ target_link_libraries(tilegen PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${
 
 add_executable(mama mama.cc  ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(mama PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
-
-
-# 

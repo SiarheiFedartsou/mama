@@ -10,3 +10,6 @@
 [submodule "protozero"]
 	path = protozero
 	url = https://github.com/mapbox/protozero.git
+[submodule "thirdparty/grpc"]
+	path = thirdparty/grpc
+	url = https://github.com/grpc/grpc.git
