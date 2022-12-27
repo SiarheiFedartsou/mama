@@ -8,6 +8,8 @@
 #include "s2/s2shapeutil_coding.h"
 #include "s2/util/coding/coder.h"
 #include "tile.pb.h"
+#include "state.pb.h"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -65,7 +67,6 @@ public:
   std::vector<Projection> Project(const Coordinate &coordinate,
                                   double radius_m) {
     S2ClosestEdgeQuery query(&spatial_index_);
-    // query.mutable_options()->set_max_results(5);
     query.mutable_options()->set_max_distance(
         S2Earth::MetersToChordAngle(radius_m));
     auto point = S2LatLng::FromDegrees(coordinate.lat, coordinate.lon)
@@ -260,6 +261,84 @@ private:
   std::unordered_map<TileId, std::shared_ptr<Tile>> tiles_;
   std::string tiles_folder_;
 };
+
+
+
+struct Location {
+    double timestamp;
+    Coordinate coordinate;
+    std::optional<double> bearing = 0.0;
+    std::optional<double> speed = 0.0;
+    std::optional<double> horizontal_accuracy = 0.0;
+};
+
+struct EmissionCost {
+public:
+    explicit EmissionCost(const Location& location) : location_(location) {}
+    double operator()(const Projection& projection) const {
+        return 0.0;
+    }
+private:
+    const Location& location_;
+};
+
+struct TransitionCost {
+public:
+    double operator()(const Location& from_location, const Location& to_location, float path_distance) const {
+        return 0.0;
+    }
+}
+
+struct MapMatcher {
+public:
+    explicit MapMatcher(std::shared_ptr<Graph> graph) : graph_(std::move(graph)) {}
+    void Update(const Location& location, state::State& state) {
+        auto candidates = graph_->Project(location.coordinate, 100);
+        if (candidates.empty()) {
+            return;
+        }
+
+        EmissionCost emission_cost_computer{location};
+
+
+        if (state.hmm_states().empty()) {
+
+            for (const auto& candidate: candidates) {
+                auto hmm_state = state.add_hmm_states();
+                hmm_state->set_sequence_cost(emission_cost(candidate));
+            }
+            // initialize
+        } else {
+            for (const auto& candidate: candidates) {
+                auto emission_cost = emission_cost_computer(candidate);
+                auto transition_cost = 0.f;
+
+
+                std::vector<PointOnGraph> candidate_points;
+                candidate_points.reserve(candidates.size());
+                for (const auto& candidate: candidates) {
+                    candidate_points.push_back(candidate.point_on_graph);
+                }
+
+                for (const auto& hmm_state: state.hmm_states()) {
+                    PointOnGraph from_point;
+                    from_point.edge_id = {hmm_state.point_on_graph.edge_id().tile_id(), hmm_state.point_on_graph.edge_id().edge_index()};
+                    from_point.offset = hmm_state.point_on_graph.offset();
+
+                    auto path_distances = graph_->PathDistance(from_point, candidate_points);
+
+
+                    // auto hmm_state = state.add_hmm_states();
+                    // hmm_state->set_sequence_cost(emission_cost);
+                }
+            }
+            // update
+        }
+    }
+private:
+    std::shared_ptr<Graph> graph_;
+};
+
 
 int main(int argc, char **argv) {
   Graph graph(argv[1]);

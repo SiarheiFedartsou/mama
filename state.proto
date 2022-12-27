@@ -1,0 +1,27 @@
+syntax = "proto3";
+package state;
+
+message EdgeId {
+    uint64 tile_id = 1;
+    uint32 edge_index = 2;
+}
+
+message PointOnGraph {
+    EdgeId edge_id = 1;
+    float offset = 2;
+}
+
+message HMMState {
+    PointOnGraph point_on_graph = 1;
+    float sequence_cost = 2;
+}
+
+message Location {
+    float lat = 1;
+    float lon = 2;
+};
+
+message State {
+    repeated HMMState hmm_states = 1;
+    Location previous_location = 2;
+}

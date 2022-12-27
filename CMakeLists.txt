@@ -17,7 +17,7 @@ find_package(Protobuf REQUIRED)
 include_directories(SYSTEM ${Protobuf_INCLUDE_DIRS})
 # for generated headers
 include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR})
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS tile.proto)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS tile.proto state.proto)
 
 add_executable(tilegen tilegen.cc  ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(tilegen PUBLIC s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
