@@ -226,7 +226,8 @@ struct TileBuilder {
 
   ssize_t getLocalNodeIndex(const Node& node) {
     if (node.getTileId() != tile_id) {
-      return addNeighbourTileNode(node);
+      // add +1 to avoid ambiguity in the case of 0 index
+      return -(addNeighbourTileNode(node) + 1);
     }
     auto local_index_itr = node_id_to_tile_node_index.find(node.id);
     if (local_index_itr == node_id_to_tile_node_index.end()) {

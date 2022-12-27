@@ -4,7 +4,7 @@ package tile;
 message Edge {
     double length = 2;
 
-    // if < 0, then the edge leaves tile and abs(...) correponds to the object in the `adjacent_edges_leaving_tile`
+    // if < 0, then the edge leaves tile and (abs(...) - 1) correponds to the object in the `neighbour_tile_nodes`
     sint32 target_node_id = 4;
 
     // id of shape in the `shape_spatial_index`
