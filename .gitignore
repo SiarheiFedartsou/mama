@@ -5,3 +5,4 @@ cmake-build-release/
 .cache
 *.osm.pbf
 .DS_Store
+demo/node_modules
