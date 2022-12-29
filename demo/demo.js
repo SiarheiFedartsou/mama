@@ -4,7 +4,7 @@ const fs = require('fs');
 const protobuf = require('protobufjs');
 const crypto = require("crypto");
 
-
+const PORT = 5000;
 const POLLING_INTERVAL = 1000;
 const GTFS_URL = 'https://mkuran.pl/gtfs/warsaw/vehicles.pb';
 
@@ -19,7 +19,12 @@ function generateId() {
     return crypto.randomBytes(16).toString("hex");
 }
 
+function log(msg) {
+    process.stderr.write(msg + '\n');
+}
+
 function notify(subscriber) {
+    log(`notify`);
     const toNotify = subscriber ? [subscriber] : subscribers;
     toNotify.forEach((subscriber) => {
         subscriber.res.write('id: ' + subscribe.id + '\n');
@@ -41,6 +46,8 @@ function subscribe(res) {
 
 function polling() {
     https.get(GTFS_URL, (res) => {
+        log('polling');
+
         const buffers = [];
         res.on('data', (d) => {
             buffers.push(d);
@@ -59,7 +66,7 @@ function polling() {
                         position: entity.vehicle.position
                     }
                 });
-    
+                log(`Got ${positions.length} positions`);
                 notify();
             } finally {
                 setTimeout(polling, POLLING_INTERVAL);
@@ -83,7 +90,7 @@ fs.readFile('./index.html', function (err, html) {
     if (err) {
         throw err; 
     }       
-    const server = http.createServer(function(request, response) {  
+    http.createServer(function(request, response) {  
         if (request.headers.accept && request.headers.accept == 'text/event-stream') {
             if (request.url == '/talk') {
                 subscribe(response);
@@ -95,7 +102,10 @@ fs.readFile('./index.html', function (err, html) {
         }
 
 
-    }).listen(8000);
+    }).listen(PORT);
+
+    
+    log(`Server running at http://localhost:${PORT}/`)
     
     startPolling();
 });

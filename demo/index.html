@@ -38,7 +38,7 @@
 <div id="map" style="width: 100%; height: 100%;"></div>
 <script>
 
-	const map = L.map('map').setView([52.06451416015625,20.898334503173828], 11);
+	const map = L.map('map').setView([52.2441,21.0245], 11);
 
 	const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		maxZoom: 19,
@@ -62,7 +62,6 @@
         const vehicles = JSON.parse(e.data);
         for (const vehicle of vehicles) {
             const position = vehicle.position;
-            console.log(position);
             markers.addLayer(L.marker([position.latitude, position.longitude]));
         }
     };
