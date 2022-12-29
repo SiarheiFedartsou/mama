@@ -6,7 +6,7 @@ services:
       - "8000:5000"
   mama:
     build: 
-      dockerfile: ../server/Dockerfile
+      dockerfile: server/Dockerfile
       context: ..
     ports:
       - "8001:50051"
