@@ -140,28 +140,28 @@ function startPolling() {
 
 
 function main() {
-    setTimeout(() => {
-        const request = {
-            entries: [
-                {
-                    location: {
-                        timestamp: {
-                            seconds: 0,
-                            nanos: 0
-                        },
-                        latitude: 0,
-                        longitude: 0,
-                        speed: null,
-                        bearing: null
-                    },
-                    state: null
-                }
-            ]
-        };
-        mamaClient.match(request, function(err, response) {
-            console.log('Greeting:', response.entries[0]);
-        });
-    }, 1);
+    // setTimeout(() => {
+    //     const request = {
+    //         entries: [
+    //             {
+    //                 location: {
+    //                     timestamp: {
+    //                         seconds: 0,
+    //                         nanos: 0
+    //                     },
+    //                     latitude: 0,
+    //                     longitude: 0,
+    //                     speed: null,
+    //                     bearing: null
+    //                 },
+    //                 state: null
+    //             }
+    //         ]
+    //     };
+    //     mamaClient.match(request, function(err, response) {
+    //         console.log('Greeting:', response.entries[0]);
+    //     });
+    // }, 1);
 
 
     fs.readFile('./index.html', function (err, html) {

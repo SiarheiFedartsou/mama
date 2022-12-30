@@ -1,5 +1,5 @@
 syntax = "proto3";
-package tile;
+package mama.tile;
 
 message Edge {
     double length = 2;

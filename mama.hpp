@@ -3,8 +3,13 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "tile.pb.h"
+
+
 namespace mama {
+
+
+namespace tile { class Edge; class Node; }
+
 using TileId = uint64_t;
 
 struct Coordinate {
@@ -37,6 +42,7 @@ struct Projection {
 };
 
 class Tile;
+
 
 class Graph {
 public:

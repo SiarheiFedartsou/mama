@@ -3,6 +3,7 @@ project(mama_server)
 
 set(CMAKE_CXX_STANDARD 20)
 
+add_subdirectory(.. ${CMAKE_CURRENT_BINARY_DIR}/mama EXCLUDE_FROM_ALL)
 
 add_subdirectory(../thirdparty/grpc ${CMAKE_CURRENT_BINARY_DIR}/grpc EXCLUDE_FROM_ALL)
 set(_PROTOBUF_LIBPROTOBUF libprotobuf)
@@ -43,6 +44,8 @@ target_link_libraries(hw_grpc_proto
 
 add_executable(mama_server "mama_server.cc")
 target_link_libraries(mama_server
+    PRIVATE
+    mama
     hw_grpc_proto
     ${_REFLECTION}
     ${_GRPC_GRPCPP}

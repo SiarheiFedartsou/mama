@@ -10,7 +10,7 @@
 #include "s2/s2shapeutil_coding.h"
 #include "s2/util/coding/coder.h"
 #include "state.pb.h"
-
+#include "tile.pb.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -27,14 +27,11 @@ public:
   explicit Tile(TileId tile_id, const std::string &path) : tile_id_(tile_id) {
     std::ifstream str(path);
     header_.ParseFromIstream(&str);
-    std::cerr << header_.edges_size() << std::endl;
 
     decoder_ = std::make_unique<Decoder>(header_.shape_spatial_index().data(),
                                          header_.shape_spatial_index().size());
     spatial_index_.Init(decoder_.get(),
                         s2shapeutil::LazyDecodeShapeFactory(decoder_.get()));
-
-    std::cerr << spatial_index_.num_shape_ids() << std::endl;
   }
 
   std::vector<Projection> Project(const Coordinate &coordinate,
@@ -49,16 +46,11 @@ public:
 
     std::vector<Projection> results;
     for (const auto &result : query.FindClosestEdges(&target)) {
-      std::cerr << "distance: " << S2Earth::ToMeters(result.distance())
-                << std::endl;
       auto coordinate = S2LatLng(query.Project(point, result));
       Projection projection;
       projection.point_on_graph.edge_id.tile_id = tile_id_;
       projection.point_on_graph.edge_id.edge_index = result.shape_id();
 
-      std::cerr << result.edge_id() << "/"
-                << spatial_index_.shape(result.shape_id())->num_edges()
-                << std::endl;
       // TODO: how do we get the offset ?
       projection.point_on_graph.offset = 0.0;
       projection.coordinate = {coordinate.lng().degrees(),
@@ -171,7 +163,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     for (const auto cellId : cells) {
       assert(cellId.level() == 11);
 
-      std::cerr << "cell: " << cellId.id() << std::endl;
+      //std::cerr << "cell: " << cellId.id() << std::endl;
 
       auto tile = GetTile(cellId.id());
       auto tile_results = tile->Project(coordinate, radius_m);
@@ -312,12 +304,3 @@ private:
 
 
 
-
-
-int main(int argc, char **argv) {
-  mama::Graph graph(argv[1]);
-  std::cerr << graph.Project(mama::Coordinate{13.388860, 52.517037}, 100).size()
-            << std::endl;
-
-  return 0;
-}

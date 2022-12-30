@@ -326,7 +326,6 @@ private:
 };
 
 int main(int argc, char **argv) {
-  std::cerr << S2CellId::lsb_for_level(kTileLevel) << std::endl;;
   if (argc != 3) {
     std::cerr << "Usage: " << argv[0] << " OSMFILE OUTPUTFOLDER\n";
     return 1;

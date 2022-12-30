@@ -1,21 +1,3 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 #include <iostream>
 #include <memory>
 #include <string>
@@ -25,6 +7,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include "mama.grpc.pb.h"
+// TODO: do something with includes here
+#include "../mama.hpp"
 
 using grpc::Server;
 using grpc::ServerAsyncResponseWriter;
@@ -38,6 +22,8 @@ using mama_server::MapMatchingResponse;
 
 class ServerImpl final {
  public:
+  explicit ServerImpl(const std::string& tiles_folder) : graph_(tiles_folder) {}
+
   ~ServerImpl() {
     server_->Shutdown();
     // Always shutdown the completion queue after the server.
@@ -72,8 +58,8 @@ class ServerImpl final {
     // Take in the "service" instance (in this case representing an asynchronous
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
-    CallData(MamaService::AsyncService* service, ServerCompletionQueue* cq)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
+    CallData(mama::Graph* graph, MamaService::AsyncService* service, ServerCompletionQueue* cq)
+        : graph_(graph), service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
       // Invoke the serving logic right away.
       Proceed();
     }
@@ -94,14 +80,27 @@ class ServerImpl final {
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new CallData(service_, cq_);
+        new CallData(graph_, service_, cq_);
 
         // The actual processing.
-
         for (const auto& entry: request_.entries()) {
+          
           auto reply_entry = reply_.add_entries();
+          
+          mama::Coordinate request_coordinate{entry.location().longitude(), entry.location().latitude()};
+          auto projections = graph_->Project(request_coordinate, 100);
+
           *reply_entry->mutable_location() = entry.location();
-          reply_entry->mutable_location()->mutable_speed()->set_value(42.0);
+          if (projections.empty()) {
+            reply_entry->mutable_location()->mutable_speed()->set_value(42.0);
+          } else {
+            std::sort(projections.begin(), projections.end(), [](const auto& a, const auto& b) {
+              return a.distance_m < b.distance_m;
+            });
+
+            reply_entry->mutable_location()->set_longitude(projections[0].coordinate.lon);
+            reply_entry->mutable_location()->set_latitude(projections[0].coordinate.lat);
+          }
         }
 
         // And we are done! Let the gRPC runtime know we've finished, using the
@@ -117,6 +116,7 @@ class ServerImpl final {
     }
 
    private:
+    mama::Graph* graph_;
     // The means of communication with the gRPC runtime for an asynchronous
     // server.
     MamaService::AsyncService* service_;
@@ -143,7 +143,7 @@ class ServerImpl final {
   // This can be run in multiple threads if needed.
   void HandleRpcs() {
     // Spawn a new CallData instance to serve new clients.
-    new CallData(&service_, cq_.get());
+    new CallData(&graph_, &service_, cq_.get());
     void* tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -160,12 +160,16 @@ class ServerImpl final {
 
   std::unique_ptr<ServerCompletionQueue> cq_;
   MamaService::AsyncService service_;
+  mama::Graph graph_;
   std::unique_ptr<Server> server_;
 };
 
 int main(int argc, char** argv) {
-  ServerImpl server;
+  if (argc != 2) {
+    std::cerr << "Usage: " << argv[0] << " TILESFOLDER\n";
+    return 1;
+  }
+  ServerImpl server(argv[1]);
   server.Run();
-
   return 0;
 }

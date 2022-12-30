@@ -6,3 +6,5 @@ cmake-build-release/
 *.osm.pbf
 .DS_Store
 demo/node_modules
+# test tiles
+tiles/
