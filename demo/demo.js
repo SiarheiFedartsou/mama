@@ -5,7 +5,7 @@ const protobuf = require('protobufjs');
 const crypto = require("crypto");
 
 // TODO: proto is copy-pasted
-const PROTO_PATH = __dirname + '/protos/helloworld.proto';
+const PROTO_PATH = __dirname + '/protos/mama.proto';
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 const packageDefinition = protoLoader.loadSync(
@@ -16,9 +16,9 @@ const packageDefinition = protoLoader.loadSync(
      defaults: true,
      oneofs: true
     });
-const hello_proto = grpc.loadPackageDefinition(packageDefinition).helloworld;
+const mama_proto = grpc.loadPackageDefinition(packageDefinition).mama_server;
 
-const MAMA_GRPC_URL = 'mama:50051';
+const MAMA_GRPC_URL = `${process.env['MAMA_HOST'] || 'localhost'}:${process.env['MAMA_PORT'] || '50051'}`;
 const PORT = 5000;
 const POLLING_INTERVAL = 1000;
 const GTFS_URL = 'https://mkuran.pl/gtfs/warsaw/vehicles.pb';
@@ -103,11 +103,24 @@ function startPolling() {
 
 function main() {
     setTimeout(() => {
-        const client = new hello_proto.Greeter(MAMA_GRPC_URL, grpc.credentials.createInsecure());
-        client.sayHello({name: 'Mama'}, function(err, response) {
-            console.log('Greeting:', response.message);
+        const client = new mama_proto.MamaService(MAMA_GRPC_URL, grpc.credentials.createInsecure());
+        const request = {
+            location: {
+                timestamp: {
+                    seconds: 0,
+                    nanos: 0
+                },
+                latitude: 0,
+                longitude: 0,
+                speed: null,
+                bearing: null
+            },
+            state: null
+        };
+        client.match(request, function(err, response) {
+            console.log('Greeting:', response);
         });
-    }, 3000);
+    }, 1000);
 
 
     fs.readFile('./index.html', function (err, html) {

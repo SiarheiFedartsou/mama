@@ -24,11 +24,7 @@
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
 
-#ifdef BAZEL_BUILD
-#include "examples/protos/helloworld.grpc.pb.h"
-#else
-#include "helloworld.grpc.pb.h"
-#endif
+#include "mama.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerAsyncResponseWriter;
@@ -36,9 +32,9 @@ using grpc::ServerBuilder;
 using grpc::ServerCompletionQueue;
 using grpc::ServerContext;
 using grpc::Status;
-using helloworld::Greeter;
-using helloworld::HelloReply;
-using helloworld::HelloRequest;
+using mama_server::MamaService;
+using mama_server::MapMatchingRequest;
+using mama_server::MapMatchingResponse;
 
 class ServerImpl final {
  public:
@@ -76,7 +72,7 @@ class ServerImpl final {
     // Take in the "service" instance (in this case representing an asynchronous
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
-    CallData(Greeter::AsyncService* service, ServerCompletionQueue* cq)
+    CallData(MamaService::AsyncService* service, ServerCompletionQueue* cq)
         : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
       // Invoke the serving logic right away.
       Proceed();
@@ -92,7 +88,7 @@ class ServerImpl final {
         // the tag uniquely identifying the request (so that different CallData
         // instances can serve different requests concurrently), in this case
         // the memory address of this CallData instance.
-        service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_,
+        service_->RequestMatch(&ctx_, &request_, &responder_, cq_, cq_,
                                   this);
       } else if (status_ == PROCESS) {
         // Spawn a new CallData instance to serve new clients while we process
@@ -101,8 +97,10 @@ class ServerImpl final {
         new CallData(service_, cq_);
 
         // The actual processing.
-        std::string prefix("Hello ");
-        reply_.set_message(prefix + request_.name());
+        // std::string prefix("Hello ");
+        // reply_.set_message(prefix + request_.name());
+        *reply_.mutable_location() = request_.location();
+        reply_.mutable_location()->set_latitude(42.0);
 
         // And we are done! Let the gRPC runtime know we've finished, using the
         // memory address of this instance as the uniquely identifying tag for
@@ -119,7 +117,7 @@ class ServerImpl final {
    private:
     // The means of communication with the gRPC runtime for an asynchronous
     // server.
-    Greeter::AsyncService* service_;
+    MamaService::AsyncService* service_;
     // The producer-consumer queue where for asynchronous server notifications.
     ServerCompletionQueue* cq_;
     // Context for the rpc, allowing to tweak aspects of it such as the use
@@ -128,12 +126,12 @@ class ServerImpl final {
     ServerContext ctx_;
 
     // What we get from the client.
-    HelloRequest request_;
+    MapMatchingRequest request_;
     // What we send back to the client.
-    HelloReply reply_;
+    MapMatchingResponse reply_;
 
     // The means to get back to the client.
-    ServerAsyncResponseWriter<HelloReply> responder_;
+    ServerAsyncResponseWriter<MapMatchingResponse> responder_;
 
     // Let's implement a tiny state machine with the following states.
     enum CallStatus { CREATE, PROCESS, FINISH };
@@ -159,7 +157,7 @@ class ServerImpl final {
   }
 
   std::unique_ptr<ServerCompletionQueue> cq_;
-  Greeter::AsyncService service_;
+  MamaService::AsyncService service_;
   std::unique_ptr<Server> server_;
 };
 
