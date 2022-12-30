@@ -97,8 +97,12 @@ class ServerImpl final {
         new CallData(service_, cq_);
 
         // The actual processing.
-        *reply_.add_entries()->mutable_location() = request_.entries(0).location();
-        reply_.mutable_entries(0)->mutable_location()->set_latitude(42.0);
+
+        for (const auto& entry: request_.entries()) {
+          auto reply_entry = reply_.add_entries();
+          *reply_entry->mutable_location() = entry.location();
+          reply_entry->mutable_location()->mutable_speed()->set_value(42.0);
+        }
 
         // And we are done! Let the gRPC runtime know we've finished, using the
         // memory address of this instance as the uniquely identifying tag for

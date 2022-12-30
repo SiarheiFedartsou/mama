@@ -27,6 +27,8 @@ const subscribers = [];
 
 let positions = [];
 
+const mamaClient = new mama_proto.MamaService(MAMA_GRPC_URL, grpc.credentials.createInsecure());
+        
 
 let FeedMessage = null;
 
@@ -59,6 +61,44 @@ function subscribe(res) {
     notify(subscribers[subscribers.length - 1]);
 }
 
+function makeGrpcRequest(feedMessage, callback) {
+    const request = {
+        entries: feedMessage.entity.map((entity) => {
+            return {
+                location: {
+                    timestamp: {
+                        seconds: 0,
+                        nanos: 0
+                    },
+                    latitude: entity.vehicle.position.latitude,
+                    longitude: entity.vehicle.position.longitude,
+                    speed: null,
+                    bearing: null
+                },
+                state: null
+            }
+        })
+    };
+    mamaClient.match(request, function(err, response) {
+        if (err || response.entries.length != feedMessage.entity.length) {
+            log(`Map matching error: ${err}`);
+            callback(err);
+            return;
+        }
+
+        const positions = [];
+
+        for (let i = 0; i < feedMessage.entity.length; ++i) {
+            positions.push({
+                id: feedMessage.entity[i].vehicle.vehicle.id,
+                label: feedMessage.entity[i].vehicle.vehicle.label,
+                position: response.entries[i].location
+            });
+        }
+        callback(null, positions);
+    });
+}
+
 function polling() {
     https.get(GTFS_URL, (res) => {
         log('polling');
@@ -73,16 +113,14 @@ function polling() {
                 const buffer = Buffer.concat(buffers);
                 const message = FeedMessage.decode(buffer);
     
-    
-                positions = message.entity.map((entity) => {
-                    return {
-                        id: entity.vehicle.vehicle.id,
-                        label: entity.vehicle.vehicle.label,
-                        position: entity.vehicle.position
+                makeGrpcRequest(message, (err, matchedPositions) => {
+                    if (err) {
+                        return;
                     }
+                    positions = matchedPositions;
+                    log(`Got ${positions.length} positions`);
+                    notify();
                 });
-                log(`Got ${positions.length} positions`);
-                notify();
             } finally {
                 setTimeout(polling, POLLING_INTERVAL);
             }
@@ -103,7 +141,6 @@ function startPolling() {
 
 function main() {
     setTimeout(() => {
-        const client = new mama_proto.MamaService(MAMA_GRPC_URL, grpc.credentials.createInsecure());
         const request = {
             entries: [
                 {
@@ -121,7 +158,7 @@ function main() {
                 }
             ]
         };
-        client.match(request, function(err, response) {
+        mamaClient.match(request, function(err, response) {
             console.log('Greeting:', response.entries[0]);
         });
     }, 1);
