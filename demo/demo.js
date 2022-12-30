@@ -3,6 +3,9 @@ const https = require('node:https');
 const fs = require('fs');
 const protobuf = require('protobufjs');
 const crypto = require("crypto");
+const redis = require("redis");
+
+
 
 // TODO: proto is copy-pasted
 const PROTO_PATH = __dirname + '/protos/mama.proto';
@@ -22,13 +25,17 @@ const MAMA_GRPC_URL = `${process.env['MAMA_HOST'] || 'localhost'}:${process.env[
 const PORT = 5000;
 const POLLING_INTERVAL = 1000;
 const GTFS_URL = 'https://mkuran.pl/gtfs/warsaw/vehicles.pb';
-
+const VEHICLE_STATE_EXPIRE_S = 180;
 const subscribers = [];
 
 let positions = [];
 
-const mamaClient = new mama_proto.MamaService(MAMA_GRPC_URL, grpc.credentials.createInsecure());
-        
+const mamaClient = new mama_proto.MamaService(MAMA_GRPC_URL, grpc.credentials.createInsecure()); 
+const redisClient = redis.createClient({
+    url: `redis://${process.env['REDIS_HOST'] || 'localhost'}:${process.env['REDIS_PORT'] || '6379'}`
+});
+
+
 
 let FeedMessage = null;
 
@@ -61,25 +68,30 @@ function subscribe(res) {
     notify(subscribers[subscribers.length - 1]);
 }
 
-function makeGrpcRequest(feedMessage, callback) {
+async function makeGrpcRequest(feedMessage, callback) {
+    const buildRedisKey = (id) => `vehicle:${id}:state`;
+
     const request = {
-        entries: feedMessage.entity.map((entity) => {
-            return {
-                location: {
-                    timestamp: {
-                        seconds: 0,
-                        nanos: 0
-                    },
-                    latitude: entity.vehicle.position.latitude,
-                    longitude: entity.vehicle.position.longitude,
-                    speed: null,
-                    bearing: null
-                },
-                state: null
-            }
-        })
+        entries: []
     };
-    mamaClient.match(request, function(err, response) {
+
+    for (let i = 0; i < feedMessage.entity.length; ++i) {
+        const entity = feedMessage.entity[i];
+        const location = {
+            timestamp: {
+                seconds: 0,
+                nanos: 0
+            },
+            latitude: entity.vehicle.position.latitude,
+            longitude: entity.vehicle.position.longitude,
+            speed: null,
+            bearing: null
+        };
+        const state = await redisClient.get(buildRedisKey(entity.vehicle.vehicle.id));
+        request.entries.push({location, state});
+    }
+
+    mamaClient.match(request, async function(err, response) {
         if (err || response.entries.length != feedMessage.entity.length) {
             log(`Map matching error: ${err}`);
             callback(err);
@@ -89,6 +101,9 @@ function makeGrpcRequest(feedMessage, callback) {
         const positions = [];
 
         for (let i = 0; i < feedMessage.entity.length; ++i) {
+
+            await redisClient.setEx(buildRedisKey(feedMessage.entity[i].vehicle.vehicle.id), VEHICLE_STATE_EXPIRE_S, response.entries[i].state);
+
             positions.push({
                 id: feedMessage.entity[i].vehicle.vehicle.id,
                 label: feedMessage.entity[i].vehicle.vehicle.label,
@@ -99,7 +114,7 @@ function makeGrpcRequest(feedMessage, callback) {
     });
 }
 
-function polling() {
+async function polling() {
     https.get(GTFS_URL, (res) => {
         log('polling');
 
@@ -108,12 +123,12 @@ function polling() {
             buffers.push(d);
         });
 
-        res.on('end', () => {
+        res.on('end', async () => {
             try {
                 const buffer = Buffer.concat(buffers);
                 const message = FeedMessage.decode(buffer);
     
-                makeGrpcRequest(message, (err, matchedPositions) => {
+                await makeGrpcRequest(message, (err, matchedPositions) => {
                     if (err) {
                         return;
                     }
@@ -139,30 +154,8 @@ function startPolling() {
 }
 
 
-function main() {
-    // setTimeout(() => {
-    //     const request = {
-    //         entries: [
-    //             {
-    //                 location: {
-    //                     timestamp: {
-    //                         seconds: 0,
-    //                         nanos: 0
-    //                     },
-    //                     latitude: 0,
-    //                     longitude: 0,
-    //                     speed: null,
-    //                     bearing: null
-    //                 },
-    //                 state: null
-    //             }
-    //         ]
-    //     };
-    //     mamaClient.match(request, function(err, response) {
-    //         console.log('Greeting:', response.entries[0]);
-    //     });
-    // }, 1);
-
+async function main() {
+    await redisClient.connect();
 
     fs.readFile('./index.html', function (err, html) {
         if (err) {
