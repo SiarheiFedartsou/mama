@@ -2,6 +2,9 @@ version: "3.9"
 services:
   web:
     build: .
+    depends_on:
+      - mama
+      - redis
     ports:
       - "8000:5000"
   mama:
@@ -9,6 +12,6 @@ services:
       dockerfile: server/Dockerfile
       context: ..
     ports:
-      - "8001:50051"
+      - "50051:50051"
   redis:
     image: "redis:7.0.7-alpine3.17"

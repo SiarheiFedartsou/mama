@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
 COPY . /src
 WORKDIR /src
 
+
+EXPOSE 50051
+
 RUN mkdir -p server/build && \
     cd server/build && \
     cmake .. && \

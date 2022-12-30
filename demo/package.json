@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@grpc/grpc-js": "^1.8.0",
     "grpc": "^1.24.11",
     "protobufjs": "^7.1.2"
   }

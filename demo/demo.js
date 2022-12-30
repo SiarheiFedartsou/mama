@@ -4,6 +4,21 @@ const fs = require('fs');
 const protobuf = require('protobufjs');
 const crypto = require("crypto");
 
+// TODO: proto is copy-pasted
+const PROTO_PATH = __dirname + '/protos/helloworld.proto';
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+const packageDefinition = protoLoader.loadSync(
+    PROTO_PATH,
+    {keepCase: true,
+     longs: String,
+     enums: String,
+     defaults: true,
+     oneofs: true
+    });
+const hello_proto = grpc.loadPackageDefinition(packageDefinition).helloworld;
+
+const MAMA_GRPC_URL = 'localhost:50051';
 const PORT = 5000;
 const POLLING_INTERVAL = 1000;
 const GTFS_URL = 'https://mkuran.pl/gtfs/warsaw/vehicles.pb';
@@ -86,26 +101,38 @@ function startPolling() {
 }
 
 
-fs.readFile('./index.html', function (err, html) {
-    if (err) {
-        throw err; 
-    }       
-    http.createServer(function(request, response) {  
-        if (request.headers.accept && request.headers.accept == 'text/event-stream') {
-            if (request.url == '/talk') {
-                subscribe(response);
-            }   
-        } else {
-            response.writeHeader(200, {"Content-Type": "text/html"});  
-            response.write(html);  
-            response.end();  
-        }
+function main() {
+    setTimeout(() => {
+        const client = new hello_proto.Greeter(MAMA_GRPC_URL, grpc.credentials.createInsecure());
+        client.sayHello({name: 'Mama'}, function(err, response) {
+            console.log('Greeting:', response.message);
+        });
+    }, 3000);
 
 
-    }).listen(PORT);
-
+    fs.readFile('./index.html', function (err, html) {
+        if (err) {
+            throw err; 
+        }       
+        http.createServer(function(request, response) {  
+            if (request.headers.accept && request.headers.accept == 'text/event-stream') {
+                if (request.url == '/talk') {
+                    subscribe(response);
+                }   
+            } else {
+                response.writeHeader(200, {"Content-Type": "text/html"});  
+                response.write(html);  
+                response.end();  
+            }
     
-    log(`Server running at http://localhost:${PORT}/`)
     
-    startPolling();
-});
+        }).listen(PORT);
+    
+        
+        log(`Server running at http://localhost:${PORT}/`)
+        
+        startPolling();
+    });
+}
+
+main();
