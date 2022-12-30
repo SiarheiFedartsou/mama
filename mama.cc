@@ -1,3 +1,5 @@
+#include "mama.hpp"
+
 #include "s2/encoded_s2shape_index.h"
 #include "s2/s2closest_edge_query.h"
 
@@ -7,47 +9,18 @@
 #include "s2/s2region_coverer.h"
 #include "s2/s2shapeutil_coding.h"
 #include "s2/util/coding/coder.h"
-#include "tile.pb.h"
 #include "state.pb.h"
 
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
-struct Coordinate {
-  double lon = 0.0;
-  double lat = 0.0;
-};
-
-using TileId = uint64_t;
-
-struct EdgeId {
-  TileId tile_id;
-  uint32_t edge_index = 0;
-};
+namespace mama {
 
 bool operator<(const EdgeId &lhs, const EdgeId &rhs) {
   return std::tie(lhs.tile_id, lhs.edge_index) <
          std::tie(rhs.tile_id, rhs.edge_index);
 }
-
-struct NodeId {
-  TileId tile_id;
-  uint32_t node_index = 0;
-};
-
-struct PointOnGraph {
-  EdgeId edge_id;
-  // range 0-1
-  double offset = 0.0;
-};
-
-struct Projection {
-  PointOnGraph point_on_graph;
-  double distance_m = 0.0;
-  Coordinate coordinate;
-  double bearing_deg = 0.0;
-};
 
 class Tile {
 public:
@@ -112,12 +85,12 @@ private:
   EncodedS2ShapeIndex spatial_index_;
 };
 
-class Graph {
-public:
-  explicit Graph(const std::string &tiles_folder)
+
+Graph::Graph(const std::string& tiles_folder)
       : tiles_folder_(tiles_folder) {}
 
-  std::vector<double> PathDistance(const PointOnGraph &from,
+
+std::vector<double> Graph::PathDistance(const PointOnGraph &from,
                                    const std::vector<PointOnGraph> &to) {
     constexpr double kMaxDepthMeters = 250.0;
     struct Distance {
@@ -180,7 +153,7 @@ public:
     return results;
   }
 
-  std::vector<Projection> Project(const Coordinate &coordinate,
+  std::vector<Projection> Graph::Project(const Coordinate &coordinate,
                                   double radius_m) {
     // TODO: make coverer class member
     S2RegionCoverer::Options options;
@@ -207,18 +180,18 @@ public:
     return results;
   }
 
-private:
-  const tile::Edge *GetEdge(const EdgeId &edge_id) {
+
+  const tile::Edge *Graph::GetEdge(const EdgeId &edge_id) {
     auto tile = GetTile(edge_id.tile_id);
     return tile ? &tile->edges(static_cast<int>(edge_id.edge_index)) : nullptr;
   }
 
-  const tile::Node *GetNode(const NodeId &node_id) {
+  const tile::Node *Graph::GetNode(const NodeId &node_id) {
     auto tile = GetTile(node_id.tile_id);
     return tile ? &tile->nodes(static_cast<int>(node_id.node_index)) : nullptr;
   }
 
-  NodeId GetTargetNode(TileId tile_id, ssize_t node_index) {
+  NodeId Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
     if (node_index >= 0) {
       return {tile_id, static_cast<uint32_t>(node_index)};
     } else {
@@ -230,7 +203,7 @@ private:
     }
   }
 
-  std::vector<EdgeId> GetAdjacentEdges(const NodeId &node_id) {
+  std::vector<EdgeId> Graph::GetAdjacentEdges(const NodeId &node_id) {
     auto node = GetNode(node_id);
     if (!node) {
       return {};
@@ -242,7 +215,7 @@ private:
     return results;
   }
 
-  std::shared_ptr<Tile> GetTile(TileId tile_id) {
+  std::shared_ptr<Tile> Graph::GetTile(TileId tile_id) {
     auto itr = tiles_.find(tile_id);
     if (itr != tiles_.end()) {
       return itr->second;
@@ -257,14 +230,7 @@ private:
     return tile;
   }
 
-private:
-  std::unordered_map<TileId, std::shared_ptr<Tile>> tiles_;
-  std::string tiles_folder_;
-};
-
-
-
-struct Location {
+  struct Location {
     double timestamp;
     Coordinate coordinate;
     std::optional<double> bearing = 0.0;
@@ -287,7 +253,7 @@ public:
     double operator()(const Location& from_location, const Location& to_location, float path_distance) const {
         return 0.0;
     }
-}
+};
 
 struct MapMatcher {
 public:
@@ -305,7 +271,7 @@ public:
 
             for (const auto& candidate: candidates) {
                 auto hmm_state = state.add_hmm_states();
-                hmm_state->set_sequence_cost(emission_cost(candidate));
+                hmm_state->set_sequence_cost(emission_cost_computer(candidate));
             }
             // initialize
         } else {
@@ -322,8 +288,8 @@ public:
 
                 for (const auto& hmm_state: state.hmm_states()) {
                     PointOnGraph from_point;
-                    from_point.edge_id = {hmm_state.point_on_graph.edge_id().tile_id(), hmm_state.point_on_graph.edge_id().edge_index()};
-                    from_point.offset = hmm_state.point_on_graph.offset();
+                    from_point.edge_id = {hmm_state.point_on_graph().edge_id().tile_id(), hmm_state.point_on_graph().edge_id().edge_index()};
+                    from_point.offset = hmm_state.point_on_graph().offset();
 
                     auto path_distances = graph_->PathDistance(from_point, candidate_points);
 
@@ -340,9 +306,17 @@ private:
 };
 
 
+} // namespace mama
+
+
+
+
+
+
+
 int main(int argc, char **argv) {
-  Graph graph(argv[1]);
-  std::cerr << graph.Project(Coordinate{13.388860, 52.517037}, 100).size()
+  mama::Graph graph(argv[1]);
+  std::cerr << graph.Project(mama::Coordinate{13.388860, 52.517037}, 100).size()
             << std::endl;
 
   return 0;
