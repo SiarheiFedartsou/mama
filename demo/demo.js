@@ -18,7 +18,7 @@ const packageDefinition = protoLoader.loadSync(
     });
 const hello_proto = grpc.loadPackageDefinition(packageDefinition).helloworld;
 
-const MAMA_GRPC_URL = 'localhost:50051';
+const MAMA_GRPC_URL = 'mama:50051';
 const PORT = 5000;
 const POLLING_INTERVAL = 1000;
 const GTFS_URL = 'https://mkuran.pl/gtfs/warsaw/vehicles.pb';
