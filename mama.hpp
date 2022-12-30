@@ -1,68 +1,30 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <unordered_map>
-
-
+#include "graph.hpp"
+#include <optional>
 namespace mama {
 
+namespace state {
+class State;
+}
 
-namespace tile { class Edge; class Node; }
-
-using TileId = uint64_t;
-
-struct Coordinate {
-  double lon = 0.0;
-  double lat = 0.0;
-};
-
-
-struct EdgeId {
-  TileId tile_id;
-  uint32_t edge_index = 0;
-};
-
-struct NodeId {
-  TileId tile_id;
-  uint32_t node_index = 0;
-};
-
-struct PointOnGraph {
-  EdgeId edge_id;
-  // range 0-1
-  double offset = 0.0;
-};
-
-struct Projection {
-  PointOnGraph point_on_graph;
-  double distance_m = 0.0;
+struct Location {
+  double timestamp;
   Coordinate coordinate;
-  double bearing_deg = 0.0;
+  std::optional<double> bearing = 0.0;
+  std::optional<double> speed = 0.0;
+  std::optional<double> horizontal_accuracy = 0.0;
 };
-
-class Tile;
-
-
-class Graph {
+class MapMatcher {
 public:
-  explicit Graph(const std::string &tiles_folder);
+  explicit MapMatcher(std::shared_ptr<Graph> graph);
 
-  std::vector<double> PathDistance(const PointOnGraph &from,
-                                   const std::vector<PointOnGraph> &to);
-  std::vector<Projection> Project(const Coordinate &coordinate,
-                                  double radius_m);
+  // the same as `state::State` overload, but automatically serializes the state
+  Location Update(const Location &location, std::string &state);
+  Location Update(const Location &location, state::State &state);
+  std::shared_ptr<Graph> graph_;
+
 private:
-  const tile::Edge *GetEdge(const EdgeId &edge_id);
-
-  const tile::Node *GetNode(const NodeId &node_id);
-  NodeId GetTargetNode(TileId tile_id, ssize_t node_index);
-  std::vector<EdgeId> GetAdjacentEdges(const NodeId &node_id);
-
-  std::shared_ptr<Tile> GetTile(TileId tile_id);
-private:
-  std::unordered_map<TileId, std::shared_ptr<Tile>> tiles_;
-  std::string tiles_folder_;
+   Location BuildResult(const Location& location, const std::vector<Projection>& candidates, const state::State& state);
 };
-
 } // namespace mama

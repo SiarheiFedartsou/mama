@@ -1,5 +1,5 @@
 syntax = "proto3";
-package state;
+package mama.state;
 
 message EdgeId {
     uint64 tile_id = 1;
@@ -17,8 +17,8 @@ message HMMState {
 }
 
 message Location {
-    float lat = 1;
-    float lon = 2;
+    double latitude = 1;
+    double longitude = 2;
 };
 
 message State {
