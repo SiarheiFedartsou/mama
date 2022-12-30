@@ -97,10 +97,8 @@ class ServerImpl final {
         new CallData(service_, cq_);
 
         // The actual processing.
-        // std::string prefix("Hello ");
-        // reply_.set_message(prefix + request_.name());
-        *reply_.mutable_location() = request_.location();
-        reply_.mutable_location()->set_latitude(42.0);
+        *reply_.add_entries()->mutable_location() = request_.entries(0).location();
+        reply_.mutable_entries(0)->mutable_location()->set_latitude(42.0);
 
         // And we are done! Let the gRPC runtime know we've finished, using the
         // memory address of this instance as the uniquely identifying tag for

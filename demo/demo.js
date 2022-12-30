@@ -105,22 +105,26 @@ function main() {
     setTimeout(() => {
         const client = new mama_proto.MamaService(MAMA_GRPC_URL, grpc.credentials.createInsecure());
         const request = {
-            location: {
-                timestamp: {
-                    seconds: 0,
-                    nanos: 0
-                },
-                latitude: 0,
-                longitude: 0,
-                speed: null,
-                bearing: null
-            },
-            state: null
+            entries: [
+                {
+                    location: {
+                        timestamp: {
+                            seconds: 0,
+                            nanos: 0
+                        },
+                        latitude: 0,
+                        longitude: 0,
+                        speed: null,
+                        bearing: null
+                    },
+                    state: null
+                }
+            ]
         };
         client.match(request, function(err, response) {
-            console.log('Greeting:', response);
+            console.log('Greeting:', response.entries[0]);
         });
-    }, 1000);
+    }, 1);
 
 
     fs.readFile('./index.html', function (err, html) {

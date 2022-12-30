@@ -20,4 +20,4 @@ RUN mkdir -p server/build && \
     make -j4
 
 
-ENTRYPOINT [ "/src/server/build/greeter_async_server" ]
+ENTRYPOINT [ "/src/server/build/mama_server" ]

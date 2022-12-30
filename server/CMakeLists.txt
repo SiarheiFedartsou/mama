@@ -41,8 +41,8 @@ target_link_libraries(hw_grpc_proto
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(greeter_async_server "greeter_async_server.cc")
-target_link_libraries(greeter_async_server
+add_executable(mama_server "mama_server.cc")
+target_link_libraries(mama_server
     hw_grpc_proto
     ${_REFLECTION}
     ${_GRPC_GRPCPP}

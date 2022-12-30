@@ -32,16 +32,23 @@ message Location {
   DoubleValue speed = 5;
 }
 
-message MapMatchingRequest {
+message MapMatchingRequestEntry {
   Location location = 1;
   bytes state = 2;
 }
 
-// The response message containing the greetings
-message MapMatchingResponse {
+message MapMatchingRequest {
+  repeated MapMatchingRequestEntry entries = 1;
+}
+
+message MapMatchingResponseEntry {
   // map-matched location
   Location location = 1;
 
   // state to be passed to the next request
   bytes state = 2;
+}
+
+message MapMatchingResponse {
+  repeated MapMatchingResponseEntry entries = 1;
 }
