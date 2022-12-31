@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "coordinate.hpp"
 
 namespace mama {
 
@@ -12,11 +13,6 @@ class Node;
 } // namespace tile
 
 using TileId = uint64_t;
-
-struct Coordinate {
-  double lon = 0.0;
-  double lat = 0.0;
-};
 
 struct EdgeId {
   TileId tile_id;

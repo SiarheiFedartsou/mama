@@ -40,7 +40,7 @@ public:
     S2ClosestEdgeQuery query(&spatial_index_);
     query.mutable_options()->set_max_distance(
         S2Earth::MetersToChordAngle(radius_m));
-    auto point = S2LatLng::FromDegrees(coordinate.lat, coordinate.lon)
+    auto point = coordinate.AsS2LatLng()
                      .Normalized()
                      .ToPoint();
     S2ClosestEdgeQuery::PointTarget target(point);
@@ -150,7 +150,7 @@ std::vector<Projection> Graph::Project(const Coordinate &coordinate,
   options.set_fixed_level(11);
   S2RegionCoverer coverer(options);
 
-  S2Cap cap(S2LatLng::FromDegrees(coordinate.lat, coordinate.lon)
+  S2Cap cap(coordinate.AsS2LatLng()
                 .Normalized()
                 .ToPoint(),
             S2Earth::MetersToChordAngle(radius_m));

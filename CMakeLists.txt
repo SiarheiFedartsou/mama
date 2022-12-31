@@ -22,7 +22,7 @@ add_executable(tilegen tilegen.cc  ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(tilegen PRIVATE s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 
 add_library(mama mama.cc graph.cc ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(mama PRIVATE s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
+target_link_libraries(mama PUBLIC s2 PRIVATE ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 
 add_executable(cli cli.cc)
 target_link_libraries(cli PRIVATE mama)

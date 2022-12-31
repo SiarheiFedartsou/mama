@@ -25,7 +25,12 @@ jobs:
         cd server/build
         cmake ..
         make -j8
-  
+    - name: Run tilegen
+      run: |
+        wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
+        mkdir tiles
+        ./build/tilegen monaco-latest.osm.pbf tiles
+      
   demo:
     runs-on: ubuntu-2204
     steps:

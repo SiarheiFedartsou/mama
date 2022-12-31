@@ -68,8 +68,8 @@ Location MapMatcher::Update(const Location &location, state::State &state) {
   //   // update
   // }
 
-  state.mutable_previous_location()->set_latitude(location.coordinate.lat);
-  state.mutable_previous_location()->set_longitude(location.coordinate.lon);
+  state.mutable_previous_location()->set_latitude(location.coordinate.lat());
+  state.mutable_previous_location()->set_longitude(location.coordinate.lng());
 
   return BuildResult(location, candidates, state);
 }

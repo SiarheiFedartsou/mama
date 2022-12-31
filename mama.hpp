@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graph.hpp"
+#include "coordinate.hpp"
 #include <optional>
 namespace mama {
 

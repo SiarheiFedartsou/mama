@@ -102,11 +102,11 @@ class ServerImpl final {
 
           auto reply_entry = reply_.add_entries();
           *reply_entry->mutable_location() = entry.location();
-          reply_entry->mutable_location()->set_longitude(map_matched_location.coordinate.lon);
-          reply_entry->mutable_location()->set_latitude(map_matched_location.coordinate.lat);
+          reply_entry->mutable_location()->set_longitude(map_matched_location.coordinate.lng());
+          reply_entry->mutable_location()->set_latitude(map_matched_location.coordinate.lat());
           //reply_entry->mutable_location()->set_bearing(map_matched_location.bearing_deg);
           
-          //reply_entry->set_state(entry_state);
+          reply_entry->set_state(entry_state);
           
           // auto reply_entry = reply_.add_entries();
           
