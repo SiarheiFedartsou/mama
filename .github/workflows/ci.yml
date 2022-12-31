@@ -1,44 +1,64 @@
-name: CI
+# name: CI
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+# on:
+#   push:
+#     branches: [ "main" ]
+#   pull_request:
+#     branches: [ "main" ]
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-2204
+#     steps:
+#     - uses: actions/checkout@v3
+#       with:
+#         submodules: 'recursive'
+#     - name: Build
+#       run: |
+#         mkdir build
+#         cd build
+#         cmake ..
+#         make -j8
+#     - name: Build server
+#       run: |
+#         mkdir -p server/build
+#         cd server/build
+#         cmake ..
+#         make -j8
+#     - name: Run tilegen
+#       run: |
+#         wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
+#         mkdir tiles
+#         ./build/tilegen monaco-latest.osm.pbf tiles
+
+#   demo:
+#     runs-on: ubuntu-2204
+#     steps:
+#     - uses: actions/checkout@v3
+#       with:
+#         submodules: 'recursive'
+#     - name: Build
+#       run: |
+#         cd demo
+#         docker compose build
+name: Go package
+
+on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-2204
+
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-    - name: Build
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-        make -j8
-    - name: Build server
-      run: |
-        mkdir -p server/build
-        cd server/build
-        cmake ..
-        make -j8
-    - name: Run tilegen
-      run: |
-        wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
-        mkdir tiles
-        ./build/tilegen monaco-latest.osm.pbf tiles
-      
-  demo:
-    runs-on: ubuntu-2204
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-    - name: Build
-      run: |
-        cd demo
-        docker compose build
-    
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.15
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
