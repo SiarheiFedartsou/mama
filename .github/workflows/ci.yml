@@ -10,9 +10,9 @@
 #   build:
 #     runs-on: ubuntu-2204
 #     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         submodules: 'recursive'
+    # - uses: actions/checkout@v3
+    #   with:
+    #     submodules: 'recursive'
 #     - name: Build
 #       run: |
 #         mkdir build
@@ -55,11 +55,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.15
+      with:
+        submodules: 'recursive'
 
       - name: Build
         run: go build -v ./...
