@@ -34,7 +34,7 @@ Location MapMatcher::Update(const Location &location, state::State &state) {
   EmissionCost emission_cost_computer{};
 
  // if (state.hmm_states().empty()) {
-
+    state.clear_hmm_states();
     for (const auto &candidate : candidates) {
       auto hmm_state = state.add_hmm_states();
       hmm_state->set_sequence_cost(emission_cost_computer(candidate));

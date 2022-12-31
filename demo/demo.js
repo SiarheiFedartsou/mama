@@ -75,6 +75,7 @@ async function makeGrpcRequest(feedMessage, callback) {
         entries: []
     };
 
+    // TODO: likely we can request all states in one request to Redis
     for (let i = 0; i < feedMessage.entity.length; ++i) {
         const entity = feedMessage.entity[i];
         const location = {
@@ -87,7 +88,8 @@ async function makeGrpcRequest(feedMessage, callback) {
             speed: null,
             bearing: null
         };
-        const state = await redisClient.get(buildRedisKey(entity.vehicle.vehicle.id));
+        const redisKey = buildRedisKey(entity.vehicle.vehicle.id);
+        const state = await redisClient.get(redis.commandOptions({ returnBuffers: true }), redisKey);
         request.entries.push({location, state});
     }
 
@@ -101,8 +103,9 @@ async function makeGrpcRequest(feedMessage, callback) {
         const positions = [];
 
         for (let i = 0; i < feedMessage.entity.length; ++i) {
-
-            await redisClient.setEx(buildRedisKey(feedMessage.entity[i].vehicle.vehicle.id), VEHICLE_STATE_EXPIRE_S, response.entries[i].state);
+            const state = response.entries[i].state;            
+            const redisKey = buildRedisKey(feedMessage.entity[i].vehicle.vehicle.id);
+            await redisClient.setEx(redisKey, VEHICLE_STATE_EXPIRE_S, state);
 
             positions.push({
                 id: feedMessage.entity[i].vehicle.vehicle.id,
@@ -127,7 +130,7 @@ async function polling() {
             try {
                 const buffer = Buffer.concat(buffers);
                 const message = FeedMessage.decode(buffer);
-    
+                // message.entity = [message.entity[0]];
                 await makeGrpcRequest(message, (err, matchedPositions) => {
                     if (err) {
                         return;
