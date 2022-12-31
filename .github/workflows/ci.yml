@@ -1,46 +1,3 @@
-# name: CI
-
-# on:
-#   push:
-#     branches: [ "main" ]
-#   pull_request:
-#     branches: [ "main" ]
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-2204
-#     steps:
-    # - uses: actions/checkout@v3
-    #   with:
-    #     submodules: 'recursive'
-  #   - name: Build
-  #     run: |
-  #       mkdir build
-  #       cd build
-  #       cmake ..
-  #       make -j8
-  #   - name: Build server
-  #     run: |
-  #       mkdir -p server/build
-  #       cd server/build
-  #       cmake ..
-  #       make -j8
-  #   - name: Run tilegen
-  #     run: |
-  #       wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
-  #       mkdir tiles
-  #       ./build/tilegen monaco-latest.osm.pbf tiles
-
-  # demo:
-  #   runs-on: ubuntu-2204
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       submodules: 'recursive'
-  #   - name: Build
-  #     run: |
-  #       cd demo
-  #       docker compose build
 name: CI
 
 on:
@@ -53,9 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env: 
-      CXXFLAGS: '-Wno-return-type'
-      CXXCOMPILER: 'g++-12'
-      CCOMPILER: 'gcc-12'
+      # CXXFLAGS: '-Wno-return-type'
+      CXXCOMPILER: 'clang-12'
+      CCOMPILER: 'clang-12'
     steps:
     - uses: actions/checkout@v3
       with:
