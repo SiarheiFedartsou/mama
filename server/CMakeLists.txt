@@ -50,4 +50,8 @@ target_link_libraries(mama_server
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
-
+# TODO: mama should export its public include directories
+target_include_directories(mama_server
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)

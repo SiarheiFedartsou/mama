@@ -8,7 +8,7 @@
 
 #include "mama.grpc.pb.h"
 // TODO: do something with includes here
-#include "../mama.hpp"
+#include "mama.hpp"
 
 using grpc::Server;
 using grpc::ServerAsyncResponseWriter;

@@ -3,7 +3,7 @@
 #include <cstdio>
 
 #include "absl/flags/flag.h"
-#include "coordinate.hpp"
+#include "base/coordinate.hpp"
 #include "s2/mutable_s2shape_index.h"
 #include "s2/s1chord_angle.h"
 #include "s2/s2closest_point_query.h"

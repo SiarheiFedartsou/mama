@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "coordinate.hpp"
+#include "base/coordinate.hpp"
 
 namespace mama {
 
