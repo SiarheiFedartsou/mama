@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-22.04
     env: 
       # CXXFLAGS: '-Wno-return-type'
-      CXXCOMPILER: 'clang-12'
-      CCOMPILER: 'clang-12'
+      CXXCOMPILER: 'clang++-14'
+      CCOMPILER: 'clang-14'
     steps:
     - uses: actions/checkout@v3
       with:
