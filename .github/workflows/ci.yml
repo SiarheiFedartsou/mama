@@ -13,34 +13,34 @@
     # - uses: actions/checkout@v3
     #   with:
     #     submodules: 'recursive'
-#     - name: Build
-#       run: |
-#         mkdir build
-#         cd build
-#         cmake ..
-#         make -j8
-#     - name: Build server
-#       run: |
-#         mkdir -p server/build
-#         cd server/build
-#         cmake ..
-#         make -j8
-#     - name: Run tilegen
-#       run: |
-#         wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
-#         mkdir tiles
-#         ./build/tilegen monaco-latest.osm.pbf tiles
+  #   - name: Build
+  #     run: |
+  #       mkdir build
+  #       cd build
+  #       cmake ..
+  #       make -j8
+  #   - name: Build server
+  #     run: |
+  #       mkdir -p server/build
+  #       cd server/build
+  #       cmake ..
+  #       make -j8
+  #   - name: Run tilegen
+  #     run: |
+  #       wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
+  #       mkdir tiles
+  #       ./build/tilegen monaco-latest.osm.pbf tiles
 
-#   demo:
-#     runs-on: ubuntu-2204
-#     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         submodules: 'recursive'
-#     - name: Build
-#       run: |
-#         cd demo
-#         docker compose build
+  # demo:
+  #   runs-on: ubuntu-2204
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       submodules: 'recursive'
+  #   - name: Build
+  #     run: |
+  #       cd demo
+  #       docker compose build
 name: CI
 
 on:
@@ -51,15 +51,36 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Build
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make -j8
+    - name: Build server
+      run: |
+        mkdir -p server/build
+        cd server/build
+        cmake ..
+        make -j8
+    - name: Run tilegen
+      run: |
+        wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
+        mkdir tiles
+        ./build/tilegen monaco-latest.osm.pbf tiles
 
-      - name: Build
-        run: go build -v ./...
-
-      - name: Test
-        run: go test -v ./...
+  demo:
+    runs-on: ubuntu-2204
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Build
+      run: |
+        cd demo
+        docker compose build
