@@ -93,13 +93,14 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   };
 
   std::map<EdgeId, size_t> to_find;
-  for (size_t index = 0; index < to_find.size(); ++index) {
+  for (size_t index = 0; index < to.size(); ++index) {
     to_find[to[index].edge_id] = index;
   }
 
   std::vector<double> results;
   results.resize(to.size(), std::numeric_limits<double>::max());
 
+  std::set<EdgeId> visited;
   std::priority_queue<Distance> queue;
   auto init_edge = GetEdge(from.edge_id);
   if (!init_edge) {
@@ -127,6 +128,11 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
 
     auto adjacent_edge_ids = GetAdjacentEdges(target_node);
     for (const auto &adjacent_edge_id : adjacent_edge_ids) {
+      if (visited.find(adjacent_edge_id) != visited.end()) {
+        continue;
+      }
+      visited.insert(adjacent_edge_id);
+
       auto edge = GetEdge(adjacent_edge_id);
       if (!edge) {
         continue;
@@ -161,9 +167,10 @@ std::vector<Projection> Graph::Project(const Coordinate &coordinate,
   for (const auto cellId : cells) {
     assert(cellId.level() == 11);
 
-    // std::cerr << "cell: " << cellId.id() << std::endl;
-
     auto tile = GetTile(cellId.id());
+    if (!tile) {
+      continue;
+    }
     auto tile_results = tile->Project(coordinate, radius_m);
     results.insert(results.end(), tile_results.begin(), tile_results.end());
   }
