@@ -7,11 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-2204
-
     steps:
     - uses: actions/checkout@v3
       with:
@@ -22,4 +19,21 @@ jobs:
         cd build
         cmake ..
         make -j8
-        
+    - name: Build server
+      run: |
+        mkdir -p server/build
+        cd server/build
+        cmake ..
+        make -j8
+  
+  demo:
+    runs-on: ubuntu-2204
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Build
+      run: |
+        cd demo
+        docker compose build
+    

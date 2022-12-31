@@ -1,14 +1,14 @@
 [submodule "s2geometry"]
-	path = s2geometry
+	path = thirdparty/s2geometry
 	url = https://github.com/google/s2geometry.git
 [submodule "libosmium"]
-	path = libosmium
+	path = thirdparty/libosmium
 	url = https://github.com/osmcode/libosmium.git
 [submodule "abseil-cpp"]
-	path = abseil-cpp
+	path = thirdparty/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp.git
 [submodule "protozero"]
-	path = protozero
+	path = thirdparty/protozero
 	url = https://github.com/mapbox/protozero.git
 [submodule "thirdparty/grpc"]
 	path = thirdparty/grpc
