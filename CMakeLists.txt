@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(mama)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
 
 find_package(EXPAT REQUIRED)

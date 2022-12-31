@@ -54,6 +54,8 @@ jobs:
     runs-on: ubuntu-22.04
     env: 
       CXXFLAGS: '-Wno-return-type'
+      CXXCOMPILER: 'g++-12'
+      CCOMPILER: 'gcc-12'
     steps:
     - uses: actions/checkout@v3
       with:

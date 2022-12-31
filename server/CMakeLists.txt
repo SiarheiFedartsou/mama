@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(mama_server)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
 
 add_subdirectory(.. ${CMAKE_CURRENT_BINARY_DIR}/mama EXCLUDE_FROM_ALL)
 
