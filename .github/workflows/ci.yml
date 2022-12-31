@@ -31,11 +31,11 @@ jobs:
         cd server/build
         cmake ..
         make -j8
-    - name: Run tilegen
+    - name: Run tests
       run: |
-        wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
         mkdir tiles
-        ./build/tilegen monaco-latest.osm.pbf tiles
+        ./build/tilegen test/data/monaco-latest.osm.pbf tiles
+        TILES_FOLDER=tiles ./build/tests        
 
   demo:
     runs-on: ubuntu-22.04
@@ -47,4 +47,3 @@ jobs:
       run: |
         cd demo
         docker compose build
-        

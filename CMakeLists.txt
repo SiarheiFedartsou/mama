@@ -28,7 +28,7 @@ add_library(mama src/mama.cc src/graph/graph.cc ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(mama PUBLIC s2 PRIVATE ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 target_include_directories(mama PRIVATE src)
 
-add_executable(cli src/cli.cc)
-target_link_libraries(cli PRIVATE mama)
-target_include_directories(cli PRIVATE src)
+add_executable(tests test/tests.cc)
+target_link_libraries(tests PRIVATE mama)
+target_include_directories(tests PRIVATE src)
 
