@@ -8,11 +8,17 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-22.04
+    env: 
+      CXX: 'clang++-14'
+      CC: 'clang-14'
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -y && sudo apt-get install protobuf-compiler
     - name: Build
       run: |
         mkdir build
@@ -30,9 +36,9 @@ jobs:
         wget http://download.geofabrik.de/europe/monaco-latest.osm.pbf
         mkdir tiles
         ./build/tilegen monaco-latest.osm.pbf tiles
-      
+
   demo:
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
       with:
@@ -41,4 +47,4 @@ jobs:
       run: |
         cd demo
         docker compose build
-    
+        
