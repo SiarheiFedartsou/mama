@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
 project(mama)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
 
 find_package(EXPAT REQUIRED)
 find_package(BZip2 REQUIRED)
 find_package(ZLIB REQUIRED)
 add_subdirectory(abseil-cpp)
-# TODO: override set(CMAKE_CXX_STANDARD 20)
 add_subdirectory(s2geometry)
 include_directories(SYSTEM protozero/include)
 include_directories(SYSTEM libosmium/include)

@@ -1,4 +1,5 @@
 #include "mama.hpp"
+#include <iostream>
 
 int main(int argc, char **argv) {
   mama::Graph graph(argv[1]);

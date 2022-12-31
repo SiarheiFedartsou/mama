@@ -298,7 +298,7 @@ struct TileBuilder {
   std::vector<NeighbourNode> neighbour_nodes;
 
 
-  tile::Header header;
+  mama::tile::Header header;
 
 private:
   void fixNeighbourTileNodes(const std::unordered_map<TileId, TileBuilder>& otherBuilders) {
