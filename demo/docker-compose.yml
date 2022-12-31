@@ -12,6 +12,7 @@ services:
       - redis
     ports:
       - "8000:5000"
+  # TODO: pass path to tiles
   mama:
     build: 
       dockerfile: server/Dockerfile

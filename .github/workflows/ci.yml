@@ -52,6 +52,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env: 
+      CXXFLAGS: '-Wno-return-type'
     steps:
     - uses: actions/checkout@v3
       with:
