@@ -30,52 +30,10 @@ public:
 MapMatcher::MapMatcher(std::shared_ptr<Graph> graph)
     : graph_(std::move(graph)) {}
 
-std::optional<Location> MapMatcher::FilterAndImpute(const Location &location,
-                                                    const state::State &state) {
-  if (!state.has_previous_location()) {
-    return location;
-  }
-  auto previous_location = ConvertProtoToLocation(state.previous_location());
-
-  if (state.has_previous_location() && location.timestamp <= previous_location.timestamp) {
-    return std::nullopt;
-  }
-  Location result = location;
-  if (!location.bearing) {
-    auto bearing = previous_location.coordinate.BearingTo(location.coordinate);
-    result.bearing = bearing;
-  }
-  if (!location.speed) {
-    // TODO: `timestamp_diff` can be negative
-    auto timestamp_diff = location.timestamp.ToSeconds() -
-                          previous_location.timestamp.ToSeconds();
-    auto distance = location.coordinate.Distance(previous_location.coordinate);
-    std::cerr << "distance: " << distance << " timestamp: " << timestamp_diff << std::endl;
-
-    if (distance > 0) {
-      std::cerr << "BINGO\n";
-    }
-    result.speed = distance / timestamp_diff;
-  }
-  return result;
-}
 
 Location MapMatcher::Update(const Location &input_location,
-                                           state::State &state) {                                       
-  // auto filtered_location = FilterAndImpute(input_location, state);
-  // if (!filtered_location) {
-  //   if (!state.has_previous_matched_location()) {
-  //     // something went wrong, so reset state
-  //     assert(false);
-  //     state = {};
-  //     return Update(input_location, state);      
-  //   }
-  //   return ConvertProtoToLocation(state.previous_matched_location());
-  // }
-
+                            state::State &state) {
   auto location = input_location;
-
- // std::cerr << "location: " << location.speed.value_or(-1) << std::endl;
 
   auto candidates = graph_->Project(location.coordinate, 100);
   if (candidates.empty()) {
@@ -120,19 +78,12 @@ Location MapMatcher::Update(const Location &input_location,
   // }
 
   // TODO: guarantee that we always properly update it
-  *state.mutable_previous_location() = ConvertLocationToProto<state::Location>(input_location);
+  *state.mutable_previous_location() =
+      ConvertLocationToProto<state::Location>(input_location);
 
   auto result = BuildResult(location, candidates, state);
-  *state.mutable_previous_matched_location() = ConvertLocationToProto<state::Location>(result);
-  return result;  
-}
-
-Location MapMatcher::Update(const Location &location,
-                                           std::string &state) {
-  state::State state_proto;
-  state_proto.ParseFromString(state);
-  auto result = Update(location, state_proto);
-  state_proto.SerializeToString(&state);
+  *state.mutable_previous_matched_location() =
+      ConvertLocationToProto<state::Location>(result);
   return result;
 }
 
@@ -155,6 +106,57 @@ Location MapMatcher::BuildResult(const Location &location,
   auto result = location;
   result.coordinate = candidates[best_index].coordinate;
   result.bearing = candidates[best_index].bearing_deg;
+  return result;
+}
+
+Location MapMatchingController::Update(const Location &location,
+                                       std::string &state) {
+  state::State state_proto;
+  state_proto.ParseFromString(state);
+  auto result = Update(location, state_proto);
+  state_proto.SerializeToString(&state);
+  return result;
+}
+
+Location MapMatchingController::Update(Location location, state::State &state) {
+  if (state.has_previous_location()) {
+    auto previous_location = ConvertProtoToLocation(state.previous_location());
+    if (previous_location.timestamp >= location.timestamp) {
+      assert(state.has_previous_matched_location());
+      if (!state.has_previous_matched_location()) {
+        // something went wrong if it happened, so reset the state
+        state = {};
+        return Update(location, state);
+      }
+      return ConvertProtoToLocation(state.previous_matched_location());
+    }
+
+    if (!location.bearing) {
+      auto bearing =
+          previous_location.coordinate.BearingTo(location.coordinate);
+      location.bearing = bearing;
+    }
+    if (!location.speed) {
+      auto timestamp_diff = location.timestamp.ToSeconds() -
+                            previous_location.timestamp.ToSeconds();
+      auto distance =
+          location.coordinate.Distance(previous_location.coordinate);
+      location.speed = distance / timestamp_diff;
+    }
+  }
+
+  constexpr auto kMinSpeedMps = 1.0;
+  if (location.speed && *location.speed < kMinSpeedMps) {
+    *state.mutable_previous_location() =
+        ConvertLocationToProto<state::Location>(location);
+    return location;
+  }
+
+  auto result = map_matcher_->Update(location, state);
+
+  *state.mutable_previous_location() =
+      ConvertLocationToProto<state::Location>(location);
+
   return result;
 }
 

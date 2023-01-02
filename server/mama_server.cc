@@ -82,7 +82,7 @@ class ServerImpl final {
         // part of its FINISH state.
         new CallData(graph_, service_, cq_);
 
-        mama::MapMatcher map_matcher{graph_};
+        mama::MapMatchingController map_matcher{graph_};
         // The actual processing.
         for (const auto& entry: request_.entries()) {
           std::string entry_state = entry.state();

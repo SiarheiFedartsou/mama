@@ -78,20 +78,31 @@ template <typename T> Location ConvertProtoToLocation(const T &location_proto) {
   return location;
 }
 
+
+
 class MapMatcher {
 public:
   explicit MapMatcher(std::shared_ptr<Graph> graph);
 
-  // the same as `state::State` overload, but automatically serializes the state
-  Location Update(const Location &location, std::string &state);
   Location Update(const Location &location, state::State &state);
   std::shared_ptr<Graph> graph_;
 
 private:
-  std::optional<Location> FilterAndImpute(const Location &location,
-                                          const state::State &state);
   Location BuildResult(const Location &location,
                        const std::vector<Projection> &candidates,
                        const state::State &state);
 };
+
+class MapMatchingController {
+public:
+  explicit MapMatchingController(std::shared_ptr<Graph> graph) : map_matcher_(std::make_unique<MapMatcher>(graph)) {}
+
+
+  // the same as `state::State` overload, but automatically serializes the state
+  Location Update(const Location &location, std::string &state);
+  Location Update(Location location, state::State &state);
+private:
+  std::unique_ptr<MapMatcher> map_matcher_;
+};
+
 } // namespace mama
