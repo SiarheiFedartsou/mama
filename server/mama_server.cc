@@ -87,43 +87,13 @@ class ServerImpl final {
         for (const auto& entry: request_.entries()) {
           std::string entry_state = entry.state();
 
-          mama::Location input_location;
-          input_location.coordinate = {entry.location().longitude(), entry.location().latitude()};
-          input_location.timestamp = entry.location().timestamp().seconds() + entry.location().timestamp().nanos() / 1e9;
-          if (entry.location().has_bearing()) {
-            input_location.bearing = entry.location().bearing().value();
-          }
-          if (entry.location().has_speed()) {
-            input_location.speed = entry.location().speed().value();
-          }
 
-
-          auto map_matched_location = map_matcher.Update(input_location, entry_state);
+          auto map_matched_location = map_matcher.Update(mama::ConvertProtoToLocation(entry.location()), entry_state);
 
           auto reply_entry = reply_.add_entries();
-          *reply_entry->mutable_location() = entry.location();
-          reply_entry->mutable_location()->set_longitude(map_matched_location.coordinate.lng());
-          reply_entry->mutable_location()->set_latitude(map_matched_location.coordinate.lat());
-          //reply_entry->mutable_location()->set_bearing(map_matched_location.bearing_deg);
-          
+          *reply_entry->mutable_location() = mama::ConvertLocationToProto<mama_server::Location>(map_matched_location);
+
           reply_entry->set_state(entry_state);
-          
-          // auto reply_entry = reply_.add_entries();
-          
-          // mama::Coordinate request_coordinate{entry.location().longitude(), entry.location().latitude()};
-          // auto projections = graph_->Project(request_coordinate, 100);
-
-          // *reply_entry->mutable_location() = entry.location();
-          // if (projections.empty()) {
-          //   reply_entry->mutable_location()->mutable_speed()->set_value(42.0);
-          // } else {
-          //   std::sort(projections.begin(), projections.end(), [](const auto& a, const auto& b) {
-          //     return a.distance_m < b.distance_m;
-          //   });
-
-          //   reply_entry->mutable_location()->set_longitude(projections[0].coordinate.lon);
-          //   reply_entry->mutable_location()->set_latitude(projections[0].coordinate.lat);
-          // }
         }
 
         // And we are done! Let the gRPC runtime know we've finished, using the
