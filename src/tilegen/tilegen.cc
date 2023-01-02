@@ -14,6 +14,7 @@
 #include "s2/util/coding/coder.h"
 #include "tile.pb.h"
 #include <fstream>
+#include <iomanip>
 #include <osmium/geom/geojson.hpp>
 #include <osmium/geom/haversine.hpp>
 #include <osmium/handler/node_locations_for_ways.hpp>
@@ -110,36 +111,28 @@ class GraphBuilder {
 public:
   void build(const DataCollector &data_collector) {
     for (const auto &way : data_collector.ways) {
-      std::vector<Coordinate> shape;
       double distance = 0.0;
-      ObjectID start_node_id = -1;
 
-      for (size_t i = 0; i < way.nodes.size(); ++i) {
-        if (start_node_id == -1) {
-          start_node_id = way.nodes[i].id;
-          shape = {way.nodes[i].coordinate};
-        } else if (data_collector.intersections.at(way.nodes[i].id) > 1) {
-          shape.push_back(way.nodes[i].coordinate);
+      assert(!way.nodes.empty());
+      ObjectID start_node_id = way.nodes.front().id;
+      std::vector<Coordinate> shape = {way.nodes.front().coordinate};
+      for (size_t i = 1; i < way.nodes.size(); ++i) {
+        shape.push_back(way.nodes[i].coordinate);
+        distance += osmium::geom::haversine::distance(
+            AsOSMCoord(*shape.rbegin()), AsOSMCoord(*(shape.rbegin() + 1)));
+        if (data_collector.intersections.at(way.nodes[i].id) > 1) {
 
           Edge edge;
           edge.from = start_node_id;
           edge.to = way.nodes[i].id;
           edge.shape = std::move(shape);
+          edge.distance = distance;
           addEdge(std::move(edge), way);
 
           shape = {way.nodes[i].coordinate};
           distance = 0.0;
 
           start_node_id = way.nodes[i].id;
-        } else {
-          shape.push_back(way.nodes[i].coordinate);
-        }
-
-        if (shape.size() > 1) {
-          const auto &node1 = shape[shape.size() - 2];
-          const auto &node2 = shape[shape.size() - 1];
-          distance += osmium::geom::haversine::distance(AsOSMCoord(node1),
-                                                        AsOSMCoord(node2));
         }
       }
       if (distance > 0) {
@@ -147,6 +140,7 @@ public:
         edge.from = start_node_id;
         edge.to = way.nodes.back().id;
         edge.shape = std::move(shape);
+        edge.distance = distance;
         addEdge(std::move(edge), way);
       }
     }
@@ -164,6 +158,15 @@ private:
   }
 
   void addEdge(Edge &&edge, const Way &fromWay) {
+    {
+      auto length = 0.0;
+      for (size_t i = 1; i < edge.shape.size(); ++i) {
+        length += osmium::geom::haversine::distance(
+            AsOSMCoord(edge.shape[i - 1]), AsOSMCoord(edge.shape[i]));
+      }
+      assert(std::abs(length - edge.distance) < 1e-6);
+    }
+
     auto fromCoordinate = edge.shape.front();
     auto toCoordinate = edge.shape.back();
     auto fromId = edge.from;

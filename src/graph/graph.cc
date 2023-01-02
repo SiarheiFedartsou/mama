@@ -40,9 +40,7 @@ public:
     S2ClosestEdgeQuery query(&spatial_index_);
     query.mutable_options()->set_max_distance(
         S2Earth::MetersToChordAngle(radius_m));
-    auto point = coordinate.AsS2LatLng()
-                     .Normalized()
-                     .ToPoint();
+    auto point = coordinate.AsS2LatLng().Normalized().ToPoint();
     S2ClosestEdgeQuery::PointTarget target(point);
 
     std::vector<Projection> results;
@@ -52,8 +50,32 @@ public:
       projection.point_on_graph.edge_id.tile_id = tile_id_;
       projection.point_on_graph.edge_id.edge_index = result.shape_id();
 
-      // TODO: how do we get the offset ?
-      projection.point_on_graph.offset = 0.0;
+      // TODO: how do we optimize this?
+      {
+        projection.point_on_graph.offset = 0.0;
+        auto shape = spatial_index_.shape(result.shape_id());
+        assert(shape);
+
+        double meters_offset = 0.0;
+        for (size_t edge_id = 0; edge_id < result.edge_id(); ++edge_id) {
+          auto edge = shape->edge(edge_id);
+          auto a = S2LatLng(edge.v0).Normalized();
+          auto b = S2LatLng(edge.v1).Normalized();
+          auto edge_length = S2Earth::ToMeters(a.GetDistance(b));
+          meters_offset += edge_length;
+        }
+
+        meters_offset +=
+            S2Earth::ToMeters(S2LatLng(shape->edge(result.edge_id()).v0)
+                                  .Normalized()
+                                  .GetDistance(coordinate.Normalized()));
+
+        projection.point_on_graph.offset =
+            meters_offset / edges(result.shape_id()).length();
+        projection.point_on_graph.offset =
+            std::clamp(projection.point_on_graph.offset, 0.0, 1.0);
+      }
+
       projection.coordinate = {coordinate.lng().degrees(),
                                coordinate.lat().degrees()};
       projection.distance_m = S2Earth::ToMeters(result.distance());
@@ -64,7 +86,7 @@ public:
   }
 
   const auto &edges() const { return header_.edges(); }
-  const auto &edges(int index) const { return header_.edges(index); }
+  const tile::Edge &edges(int index) const { return header_.edges(index); }
 
   const auto &nodes() const { return header_.nodes(); }
   const auto &nodes(int index) const { return header_.nodes(index); }
@@ -156,9 +178,7 @@ std::vector<Projection> Graph::Project(const Coordinate &coordinate,
   options.set_fixed_level(11);
   S2RegionCoverer coverer(options);
 
-  S2Cap cap(coordinate.AsS2LatLng()
-                .Normalized()
-                .ToPoint(),
+  S2Cap cap(coordinate.AsS2LatLng().Normalized().ToPoint(),
             S2Earth::MetersToChordAngle(radius_m));
   std::vector<S2CellId> cells;
   coverer.GetCovering(cap, &cells);
