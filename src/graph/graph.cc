@@ -1,20 +1,20 @@
 #include "mama.hpp"
 
-#include "s2/encoded_s2shape_index.h"
-#include "s2/s2closest_edge_query.h"
+#include <s2/encoded_s2shape_index.h>
+#include <s2/s2closest_edge_query.h>
 
-#include "s2/s2cap.h"
-#include "s2/s2earth.h"
-#include "s2/s2latlng.h"
-#include "s2/s2region_coverer.h"
-#include "s2/s2shapeutil_coding.h"
-#include "s2/util/coding/coder.h"
 #include "state.pb.h"
 #include "tile.pb.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <s2/s2cap.h>
+#include <s2/s2earth.h>
+#include <s2/s2latlng.h>
+#include <s2/s2region_coverer.h>
+#include <s2/s2shapeutil_coding.h>
+#include <s2/util/coding/coder.h>
 
 namespace mama {
 
@@ -103,8 +103,8 @@ private:
 Graph::Graph(const std::string &tiles_folder) : tiles_folder_(tiles_folder) {}
 
 std::vector<double> Graph::PathDistance(const PointOnGraph &from,
-                                        const std::vector<PointOnGraph> &to) {
-  constexpr double kMaxDepthMeters = 250.0;
+                                        const std::vector<PointOnGraph> &to,
+                                        const PathOptions &options) {
   struct Distance {
     double distance = 0.0;
     EdgeId edge_id;
@@ -114,13 +114,13 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     }
   };
 
+  std::vector<double> results;
+  results.resize(to.size(), std::numeric_limits<double>::max());
+
   std::map<EdgeId, size_t> to_find;
   for (size_t index = 0; index < to.size(); ++index) {
     to_find[to[index].edge_id] = index;
   }
-
-  std::vector<double> results;
-  results.resize(to.size(), std::numeric_limits<double>::max());
 
   std::set<EdgeId> visited;
   std::priority_queue<Distance> queue;
@@ -136,12 +136,18 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
 
     if (to_find.find(current.edge_id) != to_find.end()) {
       auto index = to_find[current.edge_id];
-      to_find.erase(current.edge_id);
 
       auto finish_edge = GetEdge(to[index].edge_id);
-      results[index] =
+      auto distance =
           current.distance - finish_edge->length() * (1.0 - to[index].offset);
-      continue;
+
+      // this is needed to handle case when `from` and `to` are on the same
+      // edge, but `to` is before `from` by offset
+      if (distance >= 0.0) {
+        to_find.erase(current.edge_id);
+        results[index] = distance;
+        continue;
+      }
     }
 
     const auto edge = GetEdge(current.edge_id);
@@ -161,7 +167,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       }
 
       auto distance = current.distance + edge->length();
-      if (distance > kMaxDepthMeters) {
+      if (distance > options.max_distance_m) {
         continue;
       }
       queue.push({distance, adjacent_edge_id});

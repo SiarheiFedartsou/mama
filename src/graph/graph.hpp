@@ -41,10 +41,15 @@ class Tile;
 
 class Graph {
 public:
+  struct PathOptions {
+    double max_distance_m = 250.0;
+  };
+
   explicit Graph(const std::string &tiles_folder);
 
   std::vector<double> PathDistance(const PointOnGraph &from,
-                                   const std::vector<PointOnGraph> &to);
+                                   const std::vector<PointOnGraph> &to,
+                                   const PathOptions &options);
   std::vector<Projection> Project(const Coordinate &coordinate,
                                   double radius_m);
 
