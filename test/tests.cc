@@ -1,6 +1,7 @@
 #include "mama.hpp"
 #include <iostream>
 #include <cassert>
+#include <limits>
 
 // TODO: we should use a test framework
 
@@ -30,12 +31,60 @@ void TestGraphShortestPath() {
   auto projections = graph.Project({7.41795, 43.73247}, 50);
   // path from exactly the same point
   {
-      auto from = projections[0];
+      auto from = projections[0].point_on_graph;
       auto to = from;
 
-      auto path = graph.PathDistance(from.point_on_graph, {to.point_on_graph});
+      auto path = graph.PathDistance(from, {to}, {250});
       assert(path.size() == 1);
       assert(std::abs(path[0]) <= 1e-10);
+  }
+
+  // path to the end of the edge
+  {
+    auto from = projections[0].point_on_graph;
+    auto to = from;
+    to.offset = 1.0;
+
+    auto path = graph.PathDistance(from, {to}, {250});
+    assert(path.size() == 1);
+    assert(std::abs(path[0] - 17.507) < 1e-3);
+  }
+
+  // path to the start of the edge
+  {
+    auto from = projections[0].point_on_graph;
+    auto to = from;
+    to.offset = 0.0;
+
+    auto path = graph.PathDistance(from, {to}, {250});
+    assert(path.size() == 1);
+    assert(std::abs(path[0] - 53.016) < 1e-3);
+  }
+
+
+  // path to the start of the edge (shouldn't exist due to max_distance_m)
+  {
+    auto from = projections[0].point_on_graph;
+    auto to = from;
+    to.offset = 0.0;
+
+    auto path = graph.PathDistance(from, {to}, {25});
+    assert(path.size() == 1);
+    assert(path[0] == std::numeric_limits<double>::max());
+  }
+
+  // path from one projection to all others
+  {
+    auto from = projections[0].point_on_graph;
+    std::vector<mama::PointOnGraph> to;
+    to.reserve(projections.size());
+    for (const auto &projection : projections) {
+      to.push_back(projection.point_on_graph);
+    }
+  
+    auto path = graph.PathDistance(from, to, {250});
+    assert(path.size() == projections.size());
+    assert(std::abs(path[0]) <= 1e-10);
   }
 }
 
