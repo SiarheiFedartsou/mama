@@ -14,6 +14,14 @@ void TestGraphProjection() {
 
   assert(graph.Project({0.0, 0.0}, 100).size() == 0);
   assert(graph.Project({7.41795, 43.73247}, 50).size() == 56);
+
+  {
+    auto projections = graph.Project({7.41795, 43.73247}, 50);
+    assert(std::abs(projections[0].point_on_graph.offset - 0.506949) < 1e-3);
+    assert(std::abs(projections[1].point_on_graph.offset - 0.492771) < 1e-3);
+    assert(std::abs(projections[0].distance_m - 3.596) < 1e-3);
+    assert(projections[0].distance_m == projections[1].distance_m);
+  }
 }
 
 void TestGraphShortestPath() {
