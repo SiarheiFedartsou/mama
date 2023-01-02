@@ -44,9 +44,9 @@ struct Timestamp {
 struct Location {
   Timestamp timestamp;
   Coordinate coordinate;
-  std::optional<double> bearing = 0.0;
-  std::optional<double> speed = 0.0;
-  std::optional<double> horizontal_accuracy = 0.0;
+  std::optional<double> bearing = {};
+  std::optional<double> speed = {};
+  std::optional<double> horizontal_accuracy = {};
 };
 
 template <typename T> T ConvertLocationToProto(const Location &location) {
@@ -71,7 +71,7 @@ template <typename T> Location ConvertProtoToLocation(const T &location_proto) {
   location.coordinate = {location_proto.longitude(), location_proto.latitude()};
   if (location_proto.has_bearing()) {
     location.bearing = location_proto.bearing().value();
-  }
+  } 
   if (location_proto.has_speed()) {
     location.speed = location_proto.speed().value();
   }

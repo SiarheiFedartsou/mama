@@ -146,10 +146,10 @@ Location MapMatchingController::Update(Location location, state::State &state) {
   }
 
   constexpr auto kMinSpeedMps = 1.0;
-  if (location.speed && *location.speed < kMinSpeedMps) {
+  if (location.speed && *location.speed < kMinSpeedMps && state.has_previous_matched_location()) {
     *state.mutable_previous_location() =
         ConvertLocationToProto<state::Location>(location);
-    return location;
+    return ConvertProtoToLocation(state.previous_matched_location());
   }
 
   auto result = map_matcher_->Update(location, state);
