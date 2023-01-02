@@ -89,7 +89,7 @@ void TestGraphShortestPath() {
 }
 
 int main(int argc, char **argv) {
- // TestGraphProjection();
+  TestGraphProjection();
   std::cerr << "TestGraphProjection passed" << std::endl;
   TestGraphShortestPath();
   std::cerr << "TestGraphShortestPath passed" << std::endl;
