@@ -134,10 +134,9 @@ Location MapMatcher::Update(const Location &input_location,
           max_cost = cost;
         }
       }
-      if (max_cost != -std::numeric_limits<double>::infinity()) {
-        auto hmm_state = state.add_hmm_states();
-        hmm_state->set_sequence_cost(max_cost);
-      }
+      // TODO: we can avoid saving `-std::numeric_limits<double>::infinity()` values, but need to somehow fix `BuildResult` in this case
+      auto hmm_state = state.add_hmm_states();
+      hmm_state->set_sequence_cost(max_cost);
     }
 
     if (state.hmm_states().empty()) {
