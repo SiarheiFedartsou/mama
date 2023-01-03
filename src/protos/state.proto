@@ -16,12 +16,35 @@ message HMMState {
     float sequence_cost = 2;
 }
 
+// TODO: state.proto and mama.proto has copy-pasted code
+message DoubleValue {
+    double value = 1;
+}
+  
+
+message Timestamp {
+    // Represents seconds of UTC time since Unix epoch
+    // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+    // 9999-12-31T23:59:59Z inclusive.
+    int64 seconds = 1;
+  
+    // Non-negative fractions of a second at nanosecond resolution. Negative
+    // second values with fractions must still have non-negative nanos values
+    // that count forward in time. Must be from 0 to 999,999,999
+    // inclusive.
+    int32 nanos = 2;
+}
+  
 message Location {
-    double latitude = 1;
-    double longitude = 2;
-};
+    Timestamp timestamp = 1;
+    double latitude = 2;
+    double longitude = 3;
+    DoubleValue bearing = 4;
+    DoubleValue speed = 5;
+}
 
 message State {
     repeated HMMState hmm_states = 1;
     Location previous_location = 2;
+    Location previous_matched_location = 3;
 }

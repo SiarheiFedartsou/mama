@@ -9,8 +9,12 @@ namespace mama {
 
 struct EmissionCost {
 public:
-  explicit EmissionCost( double sigma_z = 4.07) : inv_double_sq_sigma_z_(1.f / (sigma_z * sigma_z * 2.f)) {}
-  double operator()(const Projection &projection) const { return -inv_double_sq_sigma_z_ * std::pow(projection.distance_m, 2.0); }
+  explicit EmissionCost(double sigma_z = 4.07)
+      : inv_double_sq_sigma_z_(1.f / (sigma_z * sigma_z * 2.f)) {}
+  double operator()(const Projection &projection) const {
+    return -inv_double_sq_sigma_z_ * std::pow(projection.distance_m, 2.0);
+  }
+
 private:
   double inv_double_sq_sigma_z_;
 };
@@ -25,7 +29,12 @@ public:
 
 MapMatcher::MapMatcher(std::shared_ptr<Graph> graph)
     : graph_(std::move(graph)) {}
-Location MapMatcher::Update(const Location &location, state::State &state) {
+
+
+Location MapMatcher::Update(const Location &input_location,
+                            state::State &state) {
+  auto location = input_location;
+
   auto candidates = graph_->Project(location.coordinate, 100);
   if (candidates.empty()) {
     return location;
@@ -33,12 +42,12 @@ Location MapMatcher::Update(const Location &location, state::State &state) {
 
   EmissionCost emission_cost_computer{};
 
- // if (state.hmm_states().empty()) {
-    state.clear_hmm_states();
-    for (const auto &candidate : candidates) {
-      auto hmm_state = state.add_hmm_states();
-      hmm_state->set_sequence_cost(emission_cost_computer(candidate));
-    }
+  // if (state.hmm_states().empty()) {
+  state.clear_hmm_states();
+  for (const auto &candidate : candidates) {
+    auto hmm_state = state.add_hmm_states();
+    hmm_state->set_sequence_cost(emission_cost_computer(candidate));
+  }
   //   // initialize
   // } else {
   //   for (const auto &candidate : candidates) {
@@ -68,38 +77,87 @@ Location MapMatcher::Update(const Location &location, state::State &state) {
   //   // update
   // }
 
-  state.mutable_previous_location()->set_latitude(location.coordinate.lat());
-  state.mutable_previous_location()->set_longitude(location.coordinate.lng());
+  // TODO: guarantee that we always properly update it
+  *state.mutable_previous_location() =
+      ConvertLocationToProto<state::Location>(input_location);
 
-  return BuildResult(location, candidates, state);
+  auto result = BuildResult(location, candidates, state);
+  *state.mutable_previous_matched_location() =
+      ConvertLocationToProto<state::Location>(result);
+  return result;
 }
 
+Location MapMatcher::BuildResult(const Location &location,
+                                 const std::vector<Projection> &candidates,
+                                 const state::State &state) {
+  if (candidates.empty()) {
+    return location;
+  }
+  assert(candidates.size() == state.hmm_states_size());
 
-  Location MapMatcher::Update(const Location &location, std::string &state) {
-    state::State state_proto;
-    state_proto.ParseFromString(state);
-    auto result = Update(location, state_proto);
-    state_proto.SerializeToString(&state);
-    return result;
+  size_t best_index = 0;
+  for (size_t i = 1; i < candidates.size(); ++i) {
+    if (state.hmm_states(i).sequence_cost() >
+        state.hmm_states(best_index).sequence_cost()) {
+      best_index = i;
+    }
   }
 
-   Location MapMatcher::BuildResult(const Location& location, const std::vector<Projection>& candidates, const state::State& state) {
-    if (candidates.empty()) {
-      return location;
-    }
-    assert(candidates.size() == state.hmm_states_size());
+  auto result = location;
+  result.coordinate = candidates[best_index].coordinate;
+  result.bearing = candidates[best_index].bearing_deg;
+  return result;
+}
 
-    size_t best_index = 0;
-    for (size_t i = 1; i < candidates.size(); ++i) {
-      if (state.hmm_states(i).sequence_cost() > state.hmm_states(best_index).sequence_cost()) {
-        best_index = i;
+Location MapMatchingController::Update(const Location &location,
+                                       std::string &state) {
+  state::State state_proto;
+  state_proto.ParseFromString(state);
+  auto result = Update(location, state_proto);
+  state_proto.SerializeToString(&state);
+  return result;
+}
+
+Location MapMatchingController::Update(Location location, state::State &state) {
+  if (state.has_previous_location()) {
+    auto previous_location = ConvertProtoToLocation(state.previous_location());
+    if (previous_location.timestamp >= location.timestamp) {
+      assert(state.has_previous_matched_location());
+      if (!state.has_previous_matched_location()) {
+        // something went wrong if it happened, so reset the state
+        state = {};
+        return Update(location, state);
       }
+      return ConvertProtoToLocation(state.previous_matched_location());
     }
 
-    auto result = location;
-    result.coordinate = candidates[best_index].coordinate;
-    result.bearing = candidates[best_index].bearing_deg;
-    return result;
-   }
+    if (!location.bearing) {
+      auto bearing =
+          previous_location.coordinate.BearingTo(location.coordinate);
+      location.bearing = bearing;
+    }
+    if (!location.speed) {
+      auto timestamp_diff = location.timestamp.ToSeconds() -
+                            previous_location.timestamp.ToSeconds();
+      auto distance =
+          location.coordinate.Distance(previous_location.coordinate);
+      location.speed = distance / timestamp_diff;
+    }
+  }
+
+  constexpr auto kMinSpeedMps = 1.0;
+  if (location.speed && *location.speed < kMinSpeedMps && state.has_previous_matched_location()) {
+    *state.mutable_previous_location() =
+        ConvertLocationToProto<state::Location>(location);
+    return ConvertProtoToLocation(state.previous_matched_location());
+  }
+
+  auto result = map_matcher_->Update(location, state);
+
+  *state.mutable_previous_location() =
+      ConvertLocationToProto<state::Location>(location);
+
+  return result;
+}
 
 } // namespace mama

@@ -80,7 +80,7 @@ async function makeGrpcRequest(feedMessage, callback) {
         const entity = feedMessage.entity[i];
         const location = {
             timestamp: {
-                seconds: 0,
+                seconds: entity.vehicle.timestamp,
                 nanos: 0
             },
             latitude: entity.vehicle.position.latitude,
