@@ -1,5 +1,7 @@
 #include "mama.hpp"
 
+#include "graph/graph.hpp"
+#include "s2/s2point.h"
 #include "state.pb.h"
 #include <filesystem>
 #include <fstream>
@@ -21,15 +23,36 @@ private:
 
 struct TransitionCost {
 public:
-  double operator()(const Location &from_location, const Location &to_location,
-                    float path_distance) const {
-    return 0.0;
+  explicit TransitionCost(double haversine_distance, double beta = 5.0)
+      : haversine_distance_(haversine_distance), inversed_beta_(beta) {}
+  std::optional<double> operator()(double path_distance) const {
+    return -std::abs(path_distance - haversine_distance_) * inversed_beta_;
   }
+
+private:
+  double haversine_distance_;
+  double inversed_beta_;
 };
 
 MapMatcher::MapMatcher(std::shared_ptr<Graph> graph)
     : graph_(std::move(graph)) {}
 
+namespace {
+
+std::vector<std::vector<double>>
+BuildPathMatrix(const std::vector<PointOnGraph> &from_candidates,
+                const std::vector<PointOnGraph> &to_candidates,
+                std::shared_ptr<Graph> graph) {
+  std::vector<std::vector<double>> path_matrix;
+  path_matrix.reserve(from_candidates.size());
+  for (const auto &from_candidate : from_candidates) {
+    auto path_distances = graph->PathDistance(from_candidate, to_candidates, {});
+    path_matrix.emplace_back(std::move(path_distances));
+  }
+  return path_matrix;
+}
+
+} // namespace
 
 Location MapMatcher::Update(const Location &input_location,
                             state::State &state) {
@@ -42,40 +65,86 @@ Location MapMatcher::Update(const Location &input_location,
 
   EmissionCost emission_cost_computer{};
 
-  // if (state.hmm_states().empty()) {
-  state.clear_hmm_states();
-  for (const auto &candidate : candidates) {
-    auto hmm_state = state.add_hmm_states();
-    hmm_state->set_sequence_cost(emission_cost_computer(candidate));
+  if (state.hmm_states().empty()) {
+    // initialize
+    state.clear_hmm_states();
+    for (const auto &candidate : candidates) {
+      auto hmm_state = state.add_hmm_states();
+      hmm_state->set_sequence_cost(emission_cost_computer(candidate));
+    }
+  } else {
+    assert(state.has_previous_location());
+    if (!state.has_previous_location()) {
+      // something wrong happened, reset
+      state = {};
+      return Update(input_location, state);
+    }
+    auto previous_location = ConvertProtoToLocation(state.previous_location());
+    TransitionCost transition_cost_computer{
+        input_location.coordinate.Distance(previous_location.coordinate)};
+
+    std::vector<PointOnGraph>
+        candidate_points;
+    candidate_points.reserve(candidates.size());
+    for (const auto &candidate : candidates) {
+      candidate_points.push_back(candidate.point_on_graph);
+    }
+
+    std::vector<PointOnGraph> previous_candidate_points;
+    previous_candidate_points.reserve(state.hmm_states().size());
+    for (const auto &hmm_state : state.hmm_states()) {
+      PointOnGraph point_on_graph;
+      point_on_graph.edge_id = {
+          hmm_state.point_on_graph().edge_id().tile_id(),
+          hmm_state.point_on_graph().edge_id().edge_index()};
+      point_on_graph.offset = hmm_state.point_on_graph().offset();
+
+      previous_candidate_points.push_back(point_on_graph);
+    }
+
+    std::vector<double> previous_candidate_sequence_costs;
+    previous_candidate_sequence_costs.reserve(state.hmm_states().size());
+    for (const auto &hmm_state : state.hmm_states()) {
+      previous_candidate_sequence_costs.push_back(hmm_state.sequence_cost());
+    }
+
+    state.clear_hmm_states();
+
+    auto path_matrix =
+        BuildPathMatrix(previous_candidate_points, candidate_points, graph_);
+
+    for (size_t candidate_index = 0; candidate_index < candidate_points.size();
+         ++candidate_index) {
+      const auto &candidate = candidates[candidate_index];
+      auto emission_cost = emission_cost_computer(candidate);
+
+      double max_cost = -std::numeric_limits<double>::infinity();
+      for (size_t previous_candidate_index = 0;
+           previous_candidate_index < previous_candidate_points.size();
+           ++previous_candidate_index) {
+        auto transition_cost = transition_cost_computer(
+            path_matrix[previous_candidate_index][candidate_index]);
+        if (!transition_cost) {
+          continue;
+        }
+        auto cost =
+            previous_candidate_sequence_costs[previous_candidate_index] +
+            *transition_cost + emission_cost;
+        if (cost > max_cost) {
+          max_cost = cost;
+        }
+      }
+      // TODO: we can avoid saving `-std::numeric_limits<double>::infinity()` values, but need to somehow fix `BuildResult` in this case
+      auto hmm_state = state.add_hmm_states();
+      hmm_state->set_sequence_cost(max_cost);
+    }
+
+    if (state.hmm_states().empty()) {
+      // HMM is broken, reset
+      state = {};
+      return Update(input_location, state);
+    }
   }
-  //   // initialize
-  // } else {
-  //   for (const auto &candidate : candidates) {
-  //     auto emission_cost = emission_cost_computer(candidate);
-  //     auto transition_cost = 0.f;
-
-  //     std::vector<PointOnGraph> candidate_points;
-  //     candidate_points.reserve(candidates.size());
-  //     for (const auto &candidate : candidates) {
-  //       candidate_points.push_back(candidate.point_on_graph);
-  //     }
-
-  //     for (const auto &hmm_state : state.hmm_states()) {
-  //       PointOnGraph from_point;
-  //       from_point.edge_id = {
-  //           hmm_state.point_on_graph().edge_id().tile_id(),
-  //           hmm_state.point_on_graph().edge_id().edge_index()};
-  //       from_point.offset = hmm_state.point_on_graph().offset();
-
-  //       auto path_distances =
-  //           graph_->PathDistance(from_point, candidate_points);
-
-  //       // auto hmm_state = state.add_hmm_states();
-  //       // hmm_state->set_sequence_cost(emission_cost);
-  //     }
-  //   }
-  //   // update
-  // }
 
   // TODO: guarantee that we always properly update it
   *state.mutable_previous_location() =
@@ -146,7 +215,8 @@ Location MapMatchingController::Update(Location location, state::State &state) {
   }
 
   constexpr auto kMinSpeedMps = 1.0;
-  if (location.speed && *location.speed < kMinSpeedMps && state.has_previous_matched_location()) {
+  if (location.speed && *location.speed < kMinSpeedMps &&
+      state.has_previous_matched_location()) {
     *state.mutable_previous_location() =
         ConvertLocationToProto<state::Location>(location);
     return ConvertProtoToLocation(state.previous_matched_location());

@@ -79,6 +79,7 @@ public:
       projection.coordinate = {coordinate.lng().degrees(),
                                coordinate.lat().degrees()};
       projection.distance_m = S2Earth::ToMeters(result.distance());
+      // TODO: bearing
       results.push_back(projection);
     }
 
