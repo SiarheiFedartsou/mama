@@ -23,9 +23,8 @@ void TestGraphProjection() {
     assert(std::abs(projections[0].distance_m - 3.596) < 1e-3);
     assert(std::abs(projections[1].distance_m - 3.596) < 1e-3);
 
-    // TODO: these bearings likely must sum up to 360
-    assert(std::abs(projections[0].bearing_deg - 27) < 1e-3);
-    assert(std::abs(projections[1].bearing_deg - 208) < 1e-3);
+    assert(std::abs(projections[0].bearing_deg - 27.6450) < 1e-3);
+    assert(std::abs(projections[1].bearing_deg - 207.6451) < 1e-3);
     
     assert(projections[0].distance_m == projections[1].distance_m);
 

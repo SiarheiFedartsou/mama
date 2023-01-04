@@ -41,7 +41,7 @@ struct Coordinate {
                std::sin(teta1) * std::cos(teta2) * std::cos(delta2);
     double bearing = std::atan2(y, x);
     bearing = degrees(bearing);
-    bearing = (((int)bearing + 360) % 360);
+    bearing = std::fmod(bearing + 360, 360);
     return bearing;
   }
 };
