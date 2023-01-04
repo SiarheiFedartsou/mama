@@ -13,6 +13,11 @@ struct Coordinate {
 
   double lat() const { return y; }
 
+  static Coordinate FromS2LatLng(const S2LatLng &latlng) {
+    const auto& normalized = latlng.Normalized();
+    return Coordinate{normalized.lng().degrees(), normalized.lat().degrees()};
+  }
+
   S2LatLng AsS2LatLng() const { return S2LatLng::FromDegrees(y, x); }
 
   // TODO: use cheap ruler

@@ -50,12 +50,11 @@ public:
       projection.point_on_graph.edge_id.tile_id = tile_id_;
       projection.point_on_graph.edge_id.edge_index = result.shape_id();
 
+      auto shape = spatial_index_.shape(result.shape_id());
+      assert(shape);
+
       // TODO: how do we optimize this?
       {
-        projection.point_on_graph.offset = 0.0;
-        auto shape = spatial_index_.shape(result.shape_id());
-        assert(shape);
-
         double meters_offset = 0.0;
         for (size_t edge_id = 0; edge_id < result.edge_id(); ++edge_id) {
           auto edge = shape->edge(edge_id);
@@ -76,10 +75,15 @@ public:
             std::clamp(projection.point_on_graph.offset, 0.0, 1.0);
       }
 
-      projection.coordinate = {coordinate.lng().degrees(),
-                               coordinate.lat().degrees()};
+      {
+        auto edge = shape->edge(result.edge_id());
+        auto a = Coordinate::FromS2LatLng(S2LatLng(edge.v0));
+        auto b = Coordinate::FromS2LatLng(S2LatLng(edge.v1));
+        projection.bearing_deg = a.BearingTo(b);
+      }
+
+      projection.coordinate = Coordinate::FromS2LatLng(coordinate);
       projection.distance_m = S2Earth::ToMeters(result.distance());
-      // TODO: bearing
       results.push_back(projection);
     }
 

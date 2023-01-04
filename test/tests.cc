@@ -21,7 +21,17 @@ void TestGraphProjection() {
     assert(std::abs(projections[0].point_on_graph.offset - 0.506949) < 1e-3);
     assert(std::abs(projections[1].point_on_graph.offset - 0.492771) < 1e-3);
     assert(std::abs(projections[0].distance_m - 3.596) < 1e-3);
+    assert(std::abs(projections[1].distance_m - 3.596) < 1e-3);
+
+    // TODO: these bearings likely must sum up to 360
+    assert(std::abs(projections[0].bearing_deg - 27) < 1e-3);
+    assert(std::abs(projections[1].bearing_deg - 208) < 1e-3);
+    
     assert(projections[0].distance_m == projections[1].distance_m);
+
+    for (const auto& p: projections) {
+      assert(0 <= p.bearing_deg && p.bearing_deg < 360.0);
+    }
   }
 }
 
