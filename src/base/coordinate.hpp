@@ -13,6 +13,11 @@ struct Coordinate {
 
   double lat() const { return y; }
 
+  static Coordinate FromS2LatLng(const S2LatLng &latlng) {
+    const auto& normalized = latlng.Normalized();
+    return Coordinate{normalized.lng().degrees(), normalized.lat().degrees()};
+  }
+
   S2LatLng AsS2LatLng() const { return S2LatLng::FromDegrees(y, x); }
 
   // TODO: use cheap ruler
@@ -36,7 +41,7 @@ struct Coordinate {
                std::sin(teta1) * std::cos(teta2) * std::cos(delta2);
     double bearing = std::atan2(y, x);
     bearing = degrees(bearing);
-    bearing = (((int)bearing + 360) % 360);
+    bearing = std::fmod(bearing + 360, 360);
     return bearing;
   }
 };
