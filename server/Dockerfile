@@ -10,10 +10,21 @@ RUN apt-get update && apt-get install -y \
     libexpat1-dev \
     libbz2-dev \
     zlib1g-dev \
-    protobuf-compiler \
     cmake \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
+# install gRPC
+RUN git clone --depth 1 --recurse-submodules --branch v1.51.1 https://github.com/grpc/grpc && \
+    cd grpc && \
+    mkdir -p cmake/build && \
+    cd cmake/build && \
+    cmake -DgRPC_INSTALL=ON \
+          -DgRPC_BUILD_TESTS=OFF \
+          ../.. && \
+    make -j4 && \
+    make install && \
+    ldconfig
 
 
 
