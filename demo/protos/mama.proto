@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package mama_server;
+package mama.server.api;
 
 service MamaService {
   rpc Match (MapMatchingRequest) returns (MapMatchingResponse) {}
