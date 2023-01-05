@@ -45,5 +45,7 @@ jobs:
         submodules: 'recursive'
     - name: Build
       run: |
+        sudo apt-get update -y && sudo apt-get install osmium-tool
         cd demo
-        docker compose build
+        ./build.sh 
+        docker compose up --detach

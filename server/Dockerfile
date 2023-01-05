@@ -1,7 +1,6 @@
 FROM ubuntu:22.04
 
 COPY . /src
-WORKDIR /src
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -20,10 +19,15 @@ RUN apt-get update && apt-get install -y \
 
 EXPOSE 50051
 
-RUN mkdir -p server/build && \
-    cd server/build && \
-    cmake .. && \
+ENV CC=clang CXX=clang++
+
+RUN mkdir -p /build && \
+    cd /build && \
+    cmake /src/server && \
     make -j4
-
-
-ENTRYPOINT [ "/src/server/build/mama_server" ]
+RUN cd /build &&  make -j4 tilegen
+RUN \
+    mkdir -p /app && \
+    ln -s /build/mama_server /app/mama_server && \
+    ln -s /build/mama/tilegen /app/tilegen
+WORKDIR /app
