@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     libbz2-dev \
     zlib1g-dev \
     protobuf-compiler \
+    libprotoc-dev \
+    libprotobuf-dev \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
