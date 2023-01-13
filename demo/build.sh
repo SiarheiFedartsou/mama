@@ -5,7 +5,7 @@ set -e
 rm -rf tiles
 mkdir tiles 
 pushd tiles
-wget http://download.geofabrik.de/europe/poland-latest.osm.pbf
+wget -q http://download.geofabrik.de/europe/poland-latest.osm.pbf
 # extract Warsaw area using osmium (`brew install osmium-tool` or `apt-get install osmium-tool`)
 osmium extract --bbox=20.6,51.8,21.5,52.6 poland-latest.osm.pbf -o warsaw.osm.pbf
 popd
