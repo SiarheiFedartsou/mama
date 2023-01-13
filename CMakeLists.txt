@@ -10,23 +10,27 @@ find_package(BZip2 REQUIRED)
 find_package(ZLIB REQUIRED)
 add_subdirectory(thirdparty/abseil-cpp)
 add_subdirectory(thirdparty/s2geometry)
-include_directories(SYSTEM thirdparty/protozero/include)
-include_directories(SYSTEM thirdparty/libosmium/include)
 
 # protobuf
 find_package(Protobuf REQUIRED)
-include_directories(SYSTEM ${Protobuf_INCLUDE_DIRS})
 # for generated headers
-include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS src/protos/tile.proto src/protos/state.proto)
 
 add_executable(tilegen src/tilegen/tilegen.cc  ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(tilegen PRIVATE s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
-target_include_directories(tilegen PRIVATE src)
+target_include_directories(tilegen 
+    PRIVATE 
+        src
+    SYSTEM PRIVATE 
+        ${CMAKE_CURRENT_BINARY_DIR} 
+        ${Protobuf_INCLUDE_DIRS} 
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/protozero/include 
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/libosmium/include   
+)
 
 add_library(mama src/mama.cc src/graph/graph.cc ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(mama PUBLIC s2 PRIVATE ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
-target_include_directories(mama PRIVATE src)
+target_include_directories(mama PRIVATE src SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${Protobuf_INCLUDE_DIRS})
 
 add_executable(tests test/tests.cc)
 target_link_libraries(tests PRIVATE mama)
