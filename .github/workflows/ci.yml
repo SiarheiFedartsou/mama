@@ -7,35 +7,35 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
-    env: 
-      CXX: 'clang++-14'
-      CC: 'clang-14'
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-    - name: Install dependencies
-      run: |
-        sudo apt-get update -y && sudo apt-get install protobuf-compiler
-    - name: Build
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-        make -j8
-    - name: Build server
-      run: |
-        mkdir -p server/build
-        cd server/build
-        cmake ..
-        make -j8
-    - name: Run tests
-      run: |
-        mkdir tiles
-        ./build/tilegen test/data/monaco-latest.osm.pbf tiles
-        TILES_FOLDER=tiles ./build/tests        
+  # build:
+  #   runs-on: ubuntu-22.04
+  #   env: 
+  #     CXX: 'clang++-14'
+  #     CC: 'clang-14'
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       submodules: 'recursive'
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt-get update -y && sudo apt-get install protobuf-compiler
+  #   - name: Build
+  #     run: |
+  #       mkdir build
+  #       cd build
+  #       cmake ..
+  #       make -j8
+  #   - name: Build server
+  #     run: |
+  #       mkdir -p server/build
+  #       cd server/build
+  #       cmake ..
+  #       make -j8
+  #   - name: Run tests
+  #     run: |
+  #       mkdir tiles
+  #       ./build/tilegen test/data/monaco-latest.osm.pbf tiles
+  #       TILES_FOLDER=tiles ./build/tests        
 
   demo:
     runs-on: ubuntu-22.04

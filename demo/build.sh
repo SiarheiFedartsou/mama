@@ -12,6 +12,7 @@ popd
 
 docker build -t mama-demo -f ../server/Dockerfile .. 
 docker run -v $(pwd)/tiles:/tiles -t mama-demo  /app/tilegen /tiles/warsaw.osm.pbf /tiles
+docker run -v $(pwd)/tiles:/tiles -t mama-demo  /app/mama-server
 
-# run server
-docker compose build
+# # run server
+# docker compose build
