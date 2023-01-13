@@ -19,7 +19,7 @@ const packageDefinition = protoLoader.loadSync(
      defaults: true,
      oneofs: true
     });
-const mama_proto = grpc.loadPackageDefinition(packageDefinition).mama_server;
+const mama_proto = grpc.loadPackageDefinition(packageDefinition).mama.server.api;
 
 const MAMA_GRPC_URL = `${process.env['MAMA_HOST'] || 'localhost'}:${process.env['MAMA_PORT'] || '50051'}`;
 const PORT = 5000;

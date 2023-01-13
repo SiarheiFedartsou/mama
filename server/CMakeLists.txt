@@ -16,32 +16,29 @@ set(_REFLECTION grpc++_reflection)
 set(_GRPC_GRPCPP grpc++)
 set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
 
-get_filename_component(hw_proto "mama.proto" ABSOLUTE)
-get_filename_component(hw_proto_path "${hw_proto}" PATH)
+get_filename_component(mama_proto "mama.proto" ABSOLUTE)
+get_filename_component(mama_proto_path "${mama_proto}" PATH)
 
-set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/mama.pb.cc")
-set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/mama.pb.h")
-set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/mama.grpc.pb.cc")
-set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/mama.grpc.pb.h")
 add_custom_command(
-      OUTPUT "${hw_proto_srcs}" "${hw_proto_hdrs}" "${hw_grpc_srcs}" "${hw_grpc_hdrs}"
+      OUTPUT 
+        ${CMAKE_CURRENT_BINARY_DIR}/mama.pb.cc
+        ${CMAKE_CURRENT_BINARY_DIR}/mama.pb.h
+        ${CMAKE_CURRENT_BINARY_DIR}/mama.grpc.pb.cc
+        ${CMAKE_CURRENT_BINARY_DIR}/mama.grpc.pb.h
       COMMAND ${Protobuf_PROTOC_EXECUTABLE}
       ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
         --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-        -I "${hw_proto_path}"
+        -I "${mama_proto_path}"
         --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-        "${hw_proto}"
-      DEPENDS "${hw_proto}")
-# Include generated *.pb.h files
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+        "${mama_proto}"
+      DEPENDS "${mama_proto}")
 
-# hw_grpc_proto
-add_library(hw_grpc_proto
-  ${hw_grpc_srcs}
-  ${hw_grpc_hdrs}
-  ${hw_proto_srcs}
-  ${hw_proto_hdrs})
-target_link_libraries(hw_grpc_proto
+add_library(mama_grpc_proto
+  ${CMAKE_CURRENT_BINARY_DIR}/mama.pb.cc
+  ${CMAKE_CURRENT_BINARY_DIR}/mama.pb.h
+  ${CMAKE_CURRENT_BINARY_DIR}/mama.grpc.pb.cc
+  ${CMAKE_CURRENT_BINARY_DIR}/mama.grpc.pb.h)
+target_link_libraries(mama_grpc_proto
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${PROTOBUF_LIBRARIES})
@@ -50,12 +47,14 @@ add_executable(mama_server "mama_server.cc")
 target_link_libraries(mama_server
     PRIVATE
     mama
-    hw_grpc_proto
+    mama_grpc_proto
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${PROTOBUF_LIBRARIES})
 # TODO: mama should export its public include directories
 target_include_directories(mama_server
     PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+      ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    SYSTEM PRIVATE
+      ${CMAKE_CURRENT_BINARY_DIR}
 )
