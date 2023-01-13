@@ -9,29 +9,59 @@
 
 namespace mama {
 
+using PathMatrix = std::vector<std::vector<double>>;
+
+namespace {
+double AngleDiff(double angle1, double angle2) {
+  double diff = angle1 - angle2;
+  if (diff > 180.0) {
+    diff -= 360.0;
+  } else if (diff < -180.0) {
+    diff += 360.0;
+  }
+  return diff;
+}
+} // namespace
+
 struct EmissionCost {
 public:
-  explicit EmissionCost(double sigma_z = 4.07)
-      : inv_double_sq_sigma_z_(1.f / (sigma_z * sigma_z * 2.f)) {}
-  double operator()(const Projection &projection) const {
-    return -inv_double_sq_sigma_z_ * std::pow(projection.distance_m, 2.0);
+  explicit EmissionCost(double distance_weight = 0.03,
+                        double bearing_weight = 1.0)
+      : distance_weight_(distance_weight), bearing_weight_(bearing_weight) {}
+  double operator()(const Projection &projection,
+                    const Location &location) const {
+    const auto distance_cost =
+        -distance_weight_ * std::pow(projection.distance_m, 2.0);
+    auto bearing_cost = 0.0;
+
+    if (location.bearing) {
+      const auto bearing_diff =
+          AngleDiff(projection.bearing_deg, *location.bearing) / 180.0;
+      bearing_cost = -bearing_weight_ * std::pow(bearing_diff, 2);
+    }
+
+    return distance_cost + bearing_cost;
   }
 
 private:
-  double inv_double_sq_sigma_z_;
+  double distance_weight_;
+  double bearing_weight_;
 };
 
 struct TransitionCost {
 public:
-  explicit TransitionCost(double haversine_distance, double beta = 5.0)
-      : haversine_distance_(haversine_distance), inversed_beta_(beta) {}
+  explicit TransitionCost(double haversine_distance,
+                          double distance_diff_weight = 0.2)
+      : haversine_distance_(haversine_distance),
+        distance_diff_weight_(distance_diff_weight) {}
   std::optional<double> operator()(double path_distance) const {
-    return -std::abs(path_distance - haversine_distance_) * inversed_beta_;
+    return -distance_diff_weight_ *
+           std::abs(path_distance - haversine_distance_);
   }
 
 private:
   double haversine_distance_;
-  double inversed_beta_;
+  double distance_diff_weight_;
 };
 
 MapMatcher::MapMatcher(std::shared_ptr<Graph> graph)
@@ -39,14 +69,14 @@ MapMatcher::MapMatcher(std::shared_ptr<Graph> graph)
 
 namespace {
 
-std::vector<std::vector<double>>
-BuildPathMatrix(const std::vector<PointOnGraph> &from_candidates,
-                const std::vector<PointOnGraph> &to_candidates,
-                std::shared_ptr<Graph> graph) {
+PathMatrix BuildPathMatrix(const std::vector<PointOnGraph> &from_candidates,
+                           const std::vector<PointOnGraph> &to_candidates,
+                           std::shared_ptr<Graph> graph) {
   std::vector<std::vector<double>> path_matrix;
   path_matrix.reserve(from_candidates.size());
   for (const auto &from_candidate : from_candidates) {
-    auto path_distances = graph->PathDistance(from_candidate, to_candidates, {});
+    auto path_distances =
+        graph->PathDistance(from_candidate, to_candidates, {});
     path_matrix.emplace_back(std::move(path_distances));
   }
   return path_matrix;
@@ -56,11 +86,9 @@ BuildPathMatrix(const std::vector<PointOnGraph> &from_candidates,
 
 Location MapMatcher::Update(const Location &input_location,
                             state::State &state) {
-  auto location = input_location;
-
-  auto candidates = graph_->Project(location.coordinate, 100);
+  auto candidates = graph_->Project(input_location.coordinate, 100);
   if (candidates.empty()) {
-    return location;
+    return input_location;
   }
 
   EmissionCost emission_cost_computer{};
@@ -70,7 +98,8 @@ Location MapMatcher::Update(const Location &input_location,
     state.clear_hmm_states();
     for (const auto &candidate : candidates) {
       auto hmm_state = state.add_hmm_states();
-      hmm_state->set_sequence_cost(emission_cost_computer(candidate));
+      hmm_state->set_sequence_cost(
+          emission_cost_computer(candidate, input_location));
     }
   } else {
     assert(state.has_previous_location());
@@ -83,8 +112,7 @@ Location MapMatcher::Update(const Location &input_location,
     TransitionCost transition_cost_computer{
         input_location.coordinate.Distance(previous_location.coordinate)};
 
-    std::vector<PointOnGraph>
-        candidate_points;
+    std::vector<PointOnGraph> candidate_points;
     candidate_points.reserve(candidates.size());
     for (const auto &candidate : candidates) {
       candidate_points.push_back(candidate.point_on_graph);
@@ -116,7 +144,7 @@ Location MapMatcher::Update(const Location &input_location,
     for (size_t candidate_index = 0; candidate_index < candidate_points.size();
          ++candidate_index) {
       const auto &candidate = candidates[candidate_index];
-      auto emission_cost = emission_cost_computer(candidate);
+      auto emission_cost = emission_cost_computer(candidate, input_location);
 
       double max_cost = -std::numeric_limits<double>::infinity();
       for (size_t previous_candidate_index = 0;
@@ -134,7 +162,8 @@ Location MapMatcher::Update(const Location &input_location,
           max_cost = cost;
         }
       }
-      // TODO: we can avoid saving `-std::numeric_limits<double>::infinity()` values, but need to somehow fix `BuildResult` in this case
+      // TODO: we can avoid saving `-std::numeric_limits<double>::infinity()`
+      // values, but need to somehow fix `BuildResult` in this case
       auto hmm_state = state.add_hmm_states();
       hmm_state->set_sequence_cost(max_cost);
     }
@@ -150,7 +179,7 @@ Location MapMatcher::Update(const Location &input_location,
   *state.mutable_previous_location() =
       ConvertLocationToProto<state::Location>(input_location);
 
-  auto result = BuildResult(location, candidates, state);
+  auto result = BuildResult(input_location, candidates, state);
   *state.mutable_previous_matched_location() =
       ConvertLocationToProto<state::Location>(result);
   return result;
