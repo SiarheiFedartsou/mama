@@ -5,6 +5,7 @@ set -e
 # TODO: this is not enough to be called normal regression test
 if docker run -t mama-demo /app/mama_server | grep -vq 'Usage:'; then
   echo "mama_server doesn't return usage info, something is wrong"
+  exit 1
 fi
 
 # run demo and check that it returns 200
