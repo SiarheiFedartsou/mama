@@ -5,7 +5,9 @@ set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
 
 add_subdirectory(.. ${CMAKE_CURRENT_BINARY_DIR}/mama EXCLUDE_FROM_ALL)
 
+# we use system's SSL to avoid issues on M1 macs we currently have with gRPC's bundled SSL
 set(gRPC_SSL_PROVIDER "package"  CACHE STRING "")
+# we use system's protobuf, because the rest of the project uses it too 
 set(gRPC_PROTOBUF_PROVIDER "package"  CACHE STRING "")
 set(gRPC_PROTOBUF_PACKAGE_TYPE "MODULE"  CACHE STRING "")
 find_package(Protobuf REQUIRED)
