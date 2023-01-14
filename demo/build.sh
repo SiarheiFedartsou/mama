@@ -10,11 +10,11 @@ wget -q http://download.geofabrik.de/europe/poland-latest.osm.pbf
 osmium extract --bbox=20.6,51.8,21.5,52.6 poland-latest.osm.pbf -o warsaw.osm.pbf
 popd
 
+# build mama server
 docker build -t mama-demo -f ../server/Dockerfile .. 
-docker run -v $(pwd)/tiles:/tiles -t mama-demo /app/tilegen /tiles/warsaw.osm.pbf /tiles
-echo "RUNNING mama_server"
-#docker run -v $(pwd)/tiles:/tiles -t mama-demo /app/mama_server
-echo "STOPPED mama_server"
 
-# # run server
+# generate tiles
+docker run -v $(pwd)/tiles:/tiles -t mama-demo /app/tilegen /tiles/warsaw.osm.pbf /tiles
+
+# build demo
 docker compose build
