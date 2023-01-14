@@ -112,7 +112,7 @@ private:
 
 int main(int argc, char **argv) {
   if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " TILESFOLDER\n";
+    std::cerr << "Usge: " << argv[0] << " TILESFOLDER\n";
     return 1;
   }
   mama::server::ServerImpl server(argv[1]);
