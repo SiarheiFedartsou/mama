@@ -18,7 +18,10 @@ jobs:
         submodules: 'recursive'
     - name: Install dependencies
       run: |
-        sudo apt-get update -y && sudo apt-get install protobuf-compiler
+        sudo apt-get update -y
+        sudo apt-get install protobuf-compiler \
+                             libprotoc-dev \
+                             libprotobuf-dev
     - name: Build
       run: |
         mkdir build
@@ -45,5 +48,9 @@ jobs:
         submodules: 'recursive'
     - name: Build
       run: |
+        sudo apt-get update -y && sudo apt-get install osmium-tool
         cd demo
-        docker compose build
+        ./build.sh 
+        ./test.sh
+
+         

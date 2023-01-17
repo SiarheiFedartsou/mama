@@ -12,12 +12,12 @@ services:
       - redis
     ports:
       - "8000:5000"
-  # TODO: pass path to tiles
   mama:
-    build: 
-      dockerfile: server/Dockerfile
-      context: ..
+    image: mama-demo
     ports:
       - "50051:50051"
+    volumes:
+      - ./tiles:/tiles
+    command: ["/app/mama_server", "/tiles"]
   redis:
     image: "redis:7.0.7-alpine3.17"

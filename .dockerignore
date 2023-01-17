@@ -1,3 +1,5 @@
 demo/
 server/build/
 build/
+tiles/
+cmake-build-debug/
