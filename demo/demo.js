@@ -144,6 +144,8 @@ async function polling() {
                     log(`Got ${positions.length} positions`);
                     notify();
                 });
+            } catch(err) {
+                log(`Error: ${err}`);
             } finally {
                 setTimeout(polling, POLLING_INTERVAL);
             }

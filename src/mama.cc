@@ -254,10 +254,10 @@ Location MapMatchingController::Update(Location location, state::State &state) {
 
 Location MapMatchingController::Update(Location location) {
   if (previous_location_) {
-    // if (previous_location_->timestamp >= location.timestamp) {
-    //   assert(previous_matched_location_);
-    //   return *previous_matched_location_;
-    // }
+    if (previous_location_->timestamp >= location.timestamp) {
+      assert(previous_matched_location_);
+      return *previous_matched_location_;
+    }
 
     if (!location.bearing) {
       auto bearing =

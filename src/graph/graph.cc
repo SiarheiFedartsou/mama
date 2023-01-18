@@ -162,7 +162,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       continue;
     }
 
-    auto adjacent_edge_ids = GetAdjacentEdges(target_node);
+    auto adjacent_edge_ids = GetAdjacentEdges(*target_node);
     for (const auto &adjacent_edge_id : adjacent_edge_ids) {
       if (visited.find(adjacent_edge_id) != visited.end()) {
         continue;
