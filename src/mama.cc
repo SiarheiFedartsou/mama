@@ -75,10 +75,8 @@ PathMatrix BuildPathMatrix(const std::vector<PointOnGraph> &from_candidates,
   std::vector<std::vector<double>> path_matrix;
   path_matrix.reserve(from_candidates.size());
   for (const auto &from_candidate : from_candidates) {
-    // std::cerr << "[mama] computing path distance\n";
     auto path_distances =
         graph->PathDistance(from_candidate, to_candidates, {});
-    // std::cerr << "[mama] computing path distance2\n";
     path_matrix.emplace_back(std::move(path_distances));
   }
   return path_matrix;
@@ -95,7 +93,6 @@ Location MapMatcher::Update(const Location &input_location) {
   EmissionCost emission_cost_computer{};
 
   if (last_states_.empty()) {
-    std::cerr << "emission " << candidates.size() << std::endl;
     // initialize
     for (const auto &candidate : candidates) {
       HMMState state;
@@ -104,7 +101,6 @@ Location MapMatcher::Update(const Location &input_location) {
       last_states_.push_back(state);
     }
   } else {
-    std::cerr << "transition\n";
     assert(previous_location_);
     if (!previous_location_) {
       // something wrong happened, reset
@@ -133,12 +129,9 @@ Location MapMatcher::Update(const Location &input_location) {
     }
 
     last_states_.clear();
-    std::cerr << "build path matrix " << previous_candidate_points.size()
-              << std::endl;
     auto path_matrix =
         BuildPathMatrix(previous_candidate_points, candidate_points, graph_);
-
-    std::cerr << "build path matrix2\n";
+      
     for (size_t candidate_index = 0; candidate_index < candidate_points.size();
          ++candidate_index) {
       const auto &candidate = candidates[candidate_index];
@@ -171,7 +164,6 @@ Location MapMatcher::Update(const Location &input_location) {
     if (last_states_.empty()) {
       // HMM is broken, reset
       previous_location_ = {};
-      std::cerr << "rec2\n";
       return Update(input_location);
     }
   }
@@ -214,12 +206,10 @@ void MapMatcher::RestoreState(const state::State &pbf_state) {
     state.sequence_cost = pbf_hmm_state.sequence_cost();
     last_states_.emplace_back(state);
   }
-  std::cerr << "restoring " << last_states_.size() << " states" << std::endl;
   previous_location_ = ConvertProtoToLocation(pbf_state.previous_location());
 }
 
 void MapMatcher::SaveState(state::State &pbf_state) {
-  std::cerr << "saving " << last_states_.size() << " states" << std::endl;
   pbf_state.clear_hmm_states();
   for (const auto &state : last_states_) {
     auto pbf_hmm_state = pbf_state.add_hmm_states();
@@ -280,12 +270,10 @@ Location MapMatchingController::Update(Location location) {
     return *previous_matched_location_;
   }
 
-  std::cerr << "Matching\n";
   auto result = map_matcher_->Update(location);
 
   previous_location_ = location;
   previous_matched_location_ = result;
-  std::cerr << "Res\n";
   return result;
 }
 

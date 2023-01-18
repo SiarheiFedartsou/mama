@@ -232,7 +232,7 @@ std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
     }
     const auto &neighbor_tile_node =
         tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
-    return {neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()};
+    return {{neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()}};
   }
 }
 
