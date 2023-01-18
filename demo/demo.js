@@ -74,7 +74,7 @@ async function makeGrpcRequest(feedMessage, callback) {
     const request = {
         entries: []
     };
-
+    log('Getting state from Redis...');
     // TODO: likely we can request all states in one request to Redis
     for (let i = 0; i < feedMessage.entity.length; ++i) {
         const entity = feedMessage.entity[i];
@@ -93,6 +93,7 @@ async function makeGrpcRequest(feedMessage, callback) {
         request.entries.push({location, state});
     }
 
+    log('Calling service...');
     mamaClient.match(request, async function(err, response) {
         if (err || response.entries.length != feedMessage.entity.length) {
             log(`Map matching error: ${err}`);
@@ -112,6 +113,7 @@ async function makeGrpcRequest(feedMessage, callback) {
                 label: feedMessage.entity[i].vehicle.vehicle.label,
                 position: response.entries[i].location
             });
+            log(`Pos: ${response.entries[i].location}`);
         }
         callback(null, positions);
     });
@@ -130,6 +132,9 @@ async function polling() {
             try {
                 const buffer = Buffer.concat(buffers);
                 const message = FeedMessage.decode(buffer);
+               // message.entity = message.entity.filter(x => x.id == 'V/518/1');
+              //  console.log(JSON.stringify(message.entity[0]));
+                log(`Got ${message.entity.length} vehicles. Matching...`);
                 // message.entity = [message.entity[0]];
                 await makeGrpcRequest(message, (err, matchedPositions) => {
                     if (err) {

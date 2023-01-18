@@ -57,7 +57,7 @@ private:
   const tile::Edge *GetEdge(const EdgeId &edge_id);
 
   const tile::Node *GetNode(const NodeId &node_id);
-  NodeId GetTargetNode(TileId tile_id, ssize_t node_index);
+  std::optional<NodeId> GetTargetNode(TileId tile_id, ssize_t node_index);
   std::vector<EdgeId> GetAdjacentEdges(const NodeId &node_id);
 
   std::shared_ptr<Tile> GetTile(TileId tile_id);
