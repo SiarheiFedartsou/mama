@@ -84,13 +84,21 @@ class MapMatcher {
 public:
   explicit MapMatcher(std::shared_ptr<Graph> graph);
 
-  Location Update(const Location &location, state::State &state);
+  Location Update(const Location &location);
   std::shared_ptr<Graph> graph_;
 
+  void RestoreState(const state::State &state);
+  void SaveState(state::State &state);
 private:
   Location BuildResult(const Location &location,
-                       const std::vector<Projection> &candidates,
-                       const state::State &state);
+                       const std::vector<Projection> &candidates);
+
+  struct HMMState {
+    PointOnGraph point_on_graph;
+    double sequence_cost = 0.0;
+  };
+  std::vector<HMMState> last_states_;
+  std::optional<Location> previous_location_;
 };
 
 class MapMatchingController {
@@ -101,8 +109,17 @@ public:
   // the same as `state::State` overload, but automatically serializes the state
   Location Update(const Location &location, std::string &state);
   Location Update(Location location, state::State &state);
+  
+  Location Update(Location location);
+private:
+  void RestoreState(const state::State &state);
+  void SaveState(state::State &state);
 private:
   std::unique_ptr<MapMatcher> map_matcher_;
+
+
+  std::optional<Location> previous_location_;
+  std::optional<Location> previous_matched_location_;
 };
 
 } // namespace mama

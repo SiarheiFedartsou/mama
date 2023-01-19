@@ -158,8 +158,11 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     const auto edge = GetEdge(current.edge_id);
     auto target_node =
         GetTargetNode(current.edge_id.tile_id, edge->target_node_id());
+    if (!target_node) {
+      continue;
+    }
 
-    auto adjacent_edge_ids = GetAdjacentEdges(target_node);
+    auto adjacent_edge_ids = GetAdjacentEdges(*target_node);
     for (const auto &adjacent_edge_id : adjacent_edge_ids) {
       if (visited.find(adjacent_edge_id) != visited.end()) {
         continue;
@@ -218,15 +221,18 @@ const tile::Node *Graph::GetNode(const NodeId &node_id) {
   return tile ? &tile->nodes(static_cast<int>(node_id.node_index)) : nullptr;
 }
 
-NodeId Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
+std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
   if (node_index >= 0) {
-    return {tile_id, static_cast<uint32_t>(node_index)};
+    return {{tile_id, static_cast<uint32_t>(node_index)}};
   } else {
     // TODO: -1 while encoding?
     auto tile = GetTile(tile_id);
+    if (!tile) {
+      return {};
+    }
     const auto &neighbor_tile_node =
         tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
-    return {neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()};
+    return {{neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()}};
   }
 }
 
