@@ -2,7 +2,7 @@
 
 #include <s2/encoded_s2shape_index.h>
 #include <s2/s2closest_edge_query.h>
-
+#include "graph/tile_level.hpp"
 #include "state.pb.h"
 #include "tile.pb.h"
 #include <filesystem>
@@ -189,7 +189,7 @@ std::vector<Projection> Graph::Project(const Coordinate &coordinate,
                                        double radius_m) {
   // TODO: make coverer class member
   S2RegionCoverer::Options options;
-  options.set_fixed_level(11);
+  options.set_fixed_level(graph::kTileLevel);
   S2RegionCoverer coverer(options);
 
   S2Cap cap(coordinate.AsS2LatLng().Normalized().ToPoint(),
@@ -199,7 +199,7 @@ std::vector<Projection> Graph::Project(const Coordinate &coordinate,
 
   std::vector<Projection> results;
   for (const auto cellId : cells) {
-    assert(cellId.level() == 11);
+    assert(cellId.level() == graph::kTileLevel);
 
     auto tile = GetTile(cellId.id());
     if (!tile) {
