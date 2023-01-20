@@ -1,6 +1,8 @@
+#include "base/angle.hpp"
 #include "mama.hpp"
-#include <iostream>
+
 #include <cassert>
+#include <iostream>
 #include <limits>
 
 // TODO: we should use a test framework
@@ -8,6 +10,18 @@
 std::string TilesFolder() {
   assert(getenv("TILES_FOLDER"));
   return getenv("TILES_FOLDER");
+}
+
+void TestAngleDiff() {
+  assert(std::abs(mama::AngleDiff(0.0, 0.0) - 0.0) < 1e-6);
+  assert(std::abs(mama::AngleDiff(0.0, 180.0) - 180.0) < 1e-6);
+  assert(std::abs(mama::AngleDiff(0.0, 360.0) - 0.0) < 1e-6);
+  assert(std::abs(mama::AngleDiff(350, 32) - 42) < 1e-6);
+  assert(std::abs(mama::AngleDiff(32, 350) - 42) < 1e-6);
+  assert(std::abs(mama::AngleDiff(710, 32) - 42) < 1e-6);
+  assert(std::abs(mama::AngleDiff(710, 392) - 42) < 1e-6);
+  assert(std::abs(mama::AngleDiff(32, 710) - 42) < 1e-6);
+  assert(std::abs(mama::AngleDiff(392, 710) - 42) < 1e-6);
 }
 
 void TestGraphProjection() {
@@ -25,10 +39,10 @@ void TestGraphProjection() {
 
     assert(std::abs(projections[0].bearing_deg - 27.6450) < 1e-3);
     assert(std::abs(projections[1].bearing_deg - 207.6451) < 1e-3);
-    
+
     assert(projections[0].distance_m == projections[1].distance_m);
 
-    for (const auto& p: projections) {
+    for (const auto &p : projections) {
       assert(0 <= p.bearing_deg && p.bearing_deg < 360.0);
     }
   }
@@ -40,12 +54,12 @@ void TestGraphShortestPath() {
   auto projections = graph.Project({7.41795, 43.73247}, 50);
   // path from exactly the same point
   {
-      auto from = projections[0].point_on_graph;
-      auto to = from;
+    auto from = projections[0].point_on_graph;
+    auto to = from;
 
-      auto path = graph.PathDistance(from, {to}, {250});
-      assert(path.size() == 1);
-      assert(std::abs(path[0]) <= 1e-10);
+    auto path = graph.PathDistance(from, {to}, {250});
+    assert(path.size() == 1);
+    assert(std::abs(path[0]) <= 1e-10);
   }
 
   // path to the end of the edge
@@ -70,7 +84,6 @@ void TestGraphShortestPath() {
     assert(std::abs(path[0] - 53.016) < 1e-3);
   }
 
-
   // path to the start of the edge (shouldn't exist due to max_distance_m)
   {
     auto from = projections[0].point_on_graph;
@@ -90,7 +103,7 @@ void TestGraphShortestPath() {
     for (const auto &projection : projections) {
       to.push_back(projection.point_on_graph);
     }
-  
+
     auto path = graph.PathDistance(from, to, {250});
     assert(path.size() == projections.size());
     assert(std::abs(path[0]) <= 1e-10);

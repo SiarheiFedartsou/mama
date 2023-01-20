@@ -1,6 +1,8 @@
 #include "mama.hpp"
 
 #include "graph/graph.hpp"
+#include "base/angle.hpp"
+
 #include "s2/s2point.h"
 #include "state.pb.h"
 #include <filesystem>
@@ -11,17 +13,7 @@ namespace mama {
 
 using PathMatrix = std::vector<std::vector<double>>;
 
-namespace {
-double AngleDiff(double angle1, double angle2) {
-  double diff = angle1 - angle2;
-  if (diff > 180.0) {
-    diff -= 360.0;
-  } else if (diff < -180.0) {
-    diff += 360.0;
-  }
-  return diff;
-}
-} // namespace
+
 
 struct EmissionCost {
 public:
