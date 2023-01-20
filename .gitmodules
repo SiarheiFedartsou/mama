@@ -13,3 +13,6 @@
 [submodule "thirdparty/grpc"]
 	path = thirdparty/grpc
 	url = https://github.com/grpc/grpc.git
+[submodule "thirdparty/spdlog"]
+	path = thirdparty/spdlog
+	url = https://github.com/gabime/spdlog.git

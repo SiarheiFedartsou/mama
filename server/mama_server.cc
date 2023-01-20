@@ -5,7 +5,7 @@
 
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
-
+#include <base/log.hpp>
 #include "mama.grpc.pb.h"
 #include "mama.hpp"
 
@@ -30,7 +30,7 @@ public:
     builder.RegisterService(&service_);
     cq_ = builder.AddCompletionQueue();
     server_ = builder.BuildAndStart();
-    std::cout << "Server listening on " << server_address << std::endl;
+    MAMA_INFO("Server listening on {}", server_address);
     HandleRpcs();
   }
 
@@ -53,6 +53,7 @@ private:
       } else if (status_ == PROCESS) {
         new CallData(graph_, service_, cq_);
 
+        MAMA_INFO("Received request with {} entries for ID = {}", request_.entries_size(), reinterpret_cast<void*>(this));
         MapMatchingController map_matcher{graph_};
         for (const auto &entry : request_.entries()) {
           std::string entry_state = entry.state();
@@ -66,6 +67,8 @@ private:
 
           reply_entry->set_state(entry_state);
         }
+
+        MAMA_INFO("Sending reply with {} entries for ID = {}", reply_.entries_size(), reinterpret_cast<void*>(this));
 
         status_ = FINISH;
         responder_.Finish(reply_, grpc::Status::OK, this);
@@ -111,10 +114,13 @@ private:
 } // namespace mama
 
 int main(int argc, char **argv) {
+  mama::base::InitializeLogging();
+
   if (argc != 2) {
     std::cerr << "Usage: " << argv[0] << " TILESFOLDER\n";
     return 1;
   }
+
   mama::server::ServerImpl server(argv[1]);
   server.Run();
   return 0;

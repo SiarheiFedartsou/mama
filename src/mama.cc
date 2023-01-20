@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-
+#include <base/log.hpp>
 namespace mama {
 
 using PathMatrix = std::vector<std::vector<double>>;
@@ -228,6 +228,7 @@ Location MapMatchingController::Update(const Location &location,
 }
 
 Location MapMatchingController::Update(Location location, state::State &state) {
+  MAMA_TRACE("Update()");
   RestoreState(state);
   auto result = Update(location);
   SaveState(state);

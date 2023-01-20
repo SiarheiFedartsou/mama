@@ -59,4 +59,5 @@ target_include_directories(mama_server
       ${CMAKE_CURRENT_SOURCE_DIR}/../src
     SYSTEM PRIVATE
       ${CMAKE_CURRENT_BINARY_DIR}
+      ${CMAKE_CURRENT_LIST_DIR}/../thirdparty/spdlog/include
 )
