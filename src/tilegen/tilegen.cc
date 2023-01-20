@@ -3,6 +3,8 @@
 #include <cstdio>
 
 #include "base/coordinate.hpp"
+#include "graph/tile_level.hpp"
+
 #include "s2/mutable_s2shape_index.h"
 #include "s2/s1chord_angle.h"
 #include "s2/s2closest_point_query.h"
@@ -26,7 +28,6 @@
 
 namespace mama {
 namespace tilegen {
-constexpr int kTileLevel = 11;
 using ObjectID = unsigned long long;
 
 namespace {
@@ -101,7 +102,7 @@ struct Node {
 
   TileId getTileId() const {
     S2CellId cellId{S2LatLng::FromDegrees(coordinate.lat(), coordinate.lng())};
-    S2CellId tileCellId = cellId.parent(kTileLevel);
+    S2CellId tileCellId = cellId.parent(graph::kTileLevel);
     return tileCellId.id();
   }
 };
