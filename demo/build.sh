@@ -11,7 +11,7 @@ osmium extract --bbox=20.6,51.8,21.5,52.6 poland-latest.osm.pbf -o warsaw.osm.pb
 popd
 
 # build mama server
-docker build -t mama-demo -f ../server/Dockerfile .. 
+docker build -t mama-server -f ../server/Dockerfile .. 
 
 # generate tiles
 docker run -v $(pwd)/tiles:/tiles -t mama-demo /app/tilegen /tiles/warsaw.osm.pbf /tiles
