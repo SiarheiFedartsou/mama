@@ -1,4 +1,6 @@
 # MaMa 
+[![CI](https://github.com/SiarheiFedartsou/mama/actions/workflows/ci.yml/badge.svg)](https://github.com/SiarheiFedartsou/mama/actions/workflows/ci.yml)
+
 MaMa(from **Ma**p **Ma**tcher) library implements realtime map matcher able to work on both backend and mobile. 
 
 ## Credits
