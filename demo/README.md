@@ -1,6 +1,6 @@
 # Mama Demo
 
-This demo polls [GTFS-RT](https://mkuran.pl/gtfs/ feed of Warsaw's public transport) and visualizes their map matched positions on a map.
+This demo polls [GTFS-RT feed of Warsaw's public transport](https://mkuran.pl/gtfs/) and visualizes map matched positions of vehicles on a map.
 
 ## Build and run
 
