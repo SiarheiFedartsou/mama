@@ -1,6 +1,6 @@
 # Mama Demo
 
-This demo polls [GTFS-RT feed of Warsaw's public transport](https://mkuran.pl/gtfs/) and visualizes map matched positions of vehicles on a map.
+This demo periodically polls [GTFS-RT feed of Warsaw's public transport](https://mkuran.pl/gtfs/) and visualizes map matched positions of vehicles on a map.
 
 ## Build and run
 
@@ -10,7 +10,7 @@ This demo polls [GTFS-RT feed of Warsaw's public transport](https://mkuran.pl/gt
 1. [`./build.sh`](./build.sh) - it prepares data and build required Docker images
 2. `docker compose up`
 3. Open web browser and navigate to `http://127.0.0.1:8000/`
-4. You should see something like this(vehicles positions are updated every 10 seconds):
+4. You should see something like this(vehicles positions are updated ~ every 10 seconds):
 <img width="1500" alt="Screenshot 2023-01-24 at 17 01 34" src="https://user-images.githubusercontent.com/266271/214345648-73f70fc9-fbd3-4e98-8f12-55eae71f3f24.png">
 
 
