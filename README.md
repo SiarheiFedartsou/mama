@@ -13,12 +13,14 @@ cd tiles
 wget http://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
 # generate mama tiles
 docker run -t -v $(pwd)/tiles:/tiles ghcr.io/SiarheiFedartsou/mama /app/tilegen /tiles/berlin-latest.osm.pbf /tiles
-docker run -t -v $(pwd)/tiles:/tiles ghcr.io/SiarheiFedartsou/mama /app/mama_server /tiles 
+docker run -t -v $(pwd)/tiles:/tiles ghcr.io/SiarheiFedartsou/mama -p 50051:50051 /app/mama_server /tiles 
 ```
 
 This service exposes API via [gRPC](https://grpc.io/), so you have to use gRPC client to access it(see [mama.proto](https://github.com/SiarheiFedartsou/mama/blob/main/server/mama.proto) for service definition). For test purposes it can be done with [`grpc_cli`](https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md):
 
-TODO
+```
+grpc_cli call localhost:50051 Match "entries: [{location: {latitude: 52.517037, longitude: 13.388860}}]"
+```
 
 See our [demo](./demo) for example of real life usage.
 
