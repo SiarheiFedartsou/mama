@@ -4,7 +4,7 @@ This demo polls [GTFS-RT feed of Warsaw's public transport](https://mkuran.pl/gt
 
 ## Build and run
 
-**Prerequisites**: [`osmium`](https://osmcode.org/osmium-tool/) and [Docker](https://www.docker.com/)
+**Prerequisites**: [`osmium`](https://osmcode.org/osmium-tool/), `wget` and [Docker](https://www.docker.com/)
 
 
 1. [`./build.sh`](./build.sh) - it prepares data and build required Docker images
