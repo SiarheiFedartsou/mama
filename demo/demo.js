@@ -113,7 +113,6 @@ async function makeGrpcRequest(feedMessage, callback) {
                 label: feedMessage.entity[i].vehicle.vehicle.label,
                 position: response.entries[i].location
             });
-            log(`Pos: ${response.entries[i].location}`);
         }
         callback(null, positions);
     });
@@ -150,6 +149,9 @@ async function polling() {
                 setTimeout(polling, POLLING_INTERVAL);
             }
         });
+    }).on('error', (e) => {
+        log(`Error on GTFS polling: ${e}. Retrying...`);
+        setTimeout(polling, POLLING_INTERVAL);
     });
 }
 
