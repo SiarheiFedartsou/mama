@@ -25,7 +25,7 @@ ENV CC=clang CXX=clang++
 
 RUN mkdir -p /build && \
     cd /build && \
-    cmake /src/server && \
+    cmake -DCMAKE_BUILD_TYPE=Release /src/server && \
     make -j4
 RUN cd /build &&  make -j4 tilegen
 RUN \
