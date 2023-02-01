@@ -13,7 +13,7 @@ services:
     ports:
       - "8000:5000"
   mama:
-    image: mama-demo
+    image: mama-server
     ports:
       - "50051:50051"
     volumes:
