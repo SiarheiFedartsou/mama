@@ -204,6 +204,8 @@ struct TileBuilder {
       auto local_index = getLocalEdgeIndex(adjacent_edge_index,
                                            edges[adjacent_edge_index], nodes);
       pbfNode->add_adjacent_edges(local_index);
+      edge_local_index_to_source_node_local_index[local_index] =
+          getLocalNodeIndex(node);
     }
   }
 
@@ -267,6 +269,7 @@ struct TileBuilder {
   void finish(const std::unordered_map<TileId, TileBuilder> &tile_builders,
               const std::string &output_folder) {
     fixNeighbourTileNodes(tile_builders);
+    generateShortestPathTable();
 
     Encoder encoder;
     s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
@@ -282,6 +285,9 @@ struct TileBuilder {
   std::unordered_map<size_t, size_t> global_to_tile_edge_index;
   std::unordered_map<ObjectID, size_t> node_id_to_tile_node_index;
 
+
+  std::unordered_map<size_t, size_t> edge_local_index_to_source_node_local_index;
+
   MutableS2ShapeIndex edge_index;
   TileId tile_id;
   std::vector<std::unique_ptr<S2Polyline>> polylines;
@@ -296,6 +302,63 @@ struct TileBuilder {
   mama::tile::Header header;
 
 private:
+  // https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm
+  void generateShortestPathTable() {
+    auto shortest_path_table = header.mutable_shortest_path_length_table();
+
+    auto shortest_path_table_data = shortest_path_table->mutable_lengths();
+    shortest_path_table_data->Resize(header.nodes_size() *
+                                     header.nodes_size(), 0);
+
+    auto *shortest_path_table_data_ptr = shortest_path_table_data->mutable_data();
+
+    for (size_t i = 0; i < header.nodes_size(); ++i) {
+      for (size_t j = 0; j < header.nodes_size(); ++j) {
+        if (i == j) {
+          *shortest_path_table_data_ptr = 0;
+        } else {
+          *shortest_path_table_data_ptr = std::numeric_limits<uint32_t>::max();
+        }
+        ++shortest_path_table_data_ptr;
+      }
+    }
+
+    for (size_t i = 0; i < header.edges_size(); ++i) {
+      auto &edge = header.edges(i);
+      auto from = edge_local_index_to_source_node_local_index.at(i);
+      // TODO: `to` can be negative for neighbour nodes !!!
+      auto to = edge.target_node_id();
+      auto length = edge.length();
+      shortest_path_table_data_ptr = shortest_path_table_data->mutable_data() +
+          from * header.nodes_size() + to;
+      *shortest_path_table_data_ptr = length;
+    }
+
+    for (size_t k = 0; k < header.nodes_size(); ++k) {
+      for (size_t i = 0; i < header.nodes_size(); ++i) {
+        for (size_t j = 0; j < header.nodes_size(); ++j) {
+          auto *shortest_path_table_data_ptr = shortest_path_table_data->mutable_data() +
+              i * header.nodes_size() + j;
+          auto *shortest_path_table_data_ptr_ik = shortest_path_table_data->mutable_data() +
+              i * header.nodes_size() + k;
+          auto *shortest_path_table_data_ptr_kj = shortest_path_table_data->mutable_data() +
+              k * header.nodes_size() + j;
+          if (*shortest_path_table_data_ptr_ik != std::numeric_limits<uint32_t>::max() &&
+              *shortest_path_table_data_ptr_kj != std::numeric_limits<uint32_t>::max() &&
+              *shortest_path_table_data_ptr_ik + *shortest_path_table_data_ptr_kj <
+                  *shortest_path_table_data_ptr) {
+            *shortest_path_table_data_ptr =
+                *shortest_path_table_data_ptr_ik +
+                *shortest_path_table_data_ptr_kj;
+          }
+        }
+      }
+    }
+
+    std::cerr << "Shortest path table size: " << shortest_path_table_data->size() << std::endl;
+  }
+
+
   void fixNeighbourTileNodes(
       const std::unordered_map<TileId, TileBuilder> &otherBuilders) {
     assert(neighbour_nodes.size() == header.neighbour_tile_nodes_size());

@@ -20,9 +20,15 @@ message NeighbourTileNode {
     uint32 node_id = 2;
 }
 
+message ShortestPathLengthTable {
+    repeated uint32 lengths = 1;
+}
+
 message Header {
     repeated Edge edges = 1;
     repeated Node nodes = 2;
     repeated NeighbourTileNode neighbour_tile_nodes = 3;
     bytes shape_spatial_index = 4;
+
+    ShortestPathLengthTable shortest_path_length_table = 5;
 }
