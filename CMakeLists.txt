@@ -47,7 +47,8 @@ target_include_directories(
 add_subdirectory(thirdparty/Catch2)
 add_executable(tests test/base/angle_tests.cc test/base/coordinate_tests.cc test/graph/graph_tests.cc)
 target_link_libraries(tests PRIVATE mama Catch2::Catch2 Catch2::Catch2WithMain)
-target_include_directories(tests PRIVATE src 
-${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
-${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include)
+target_include_directories(tests PRIVATE 
+    src 
+    ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
+    ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include)
 
