@@ -63,3 +63,5 @@ target_include_directories(mama_server
       ${CMAKE_CURRENT_LIST_DIR}/../thirdparty/geometry.hpp/include
       ${CMAKE_CURRENT_LIST_DIR}/../thirdparty/cheap-ruler-cpp/include
 )
+
+install(TARGETS mama_server DESTINATION bin)

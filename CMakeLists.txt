@@ -52,3 +52,5 @@ target_include_directories(tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
     ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include)
 
+install(TARGETS tilegen DESTINATION bin)
+install(TARGETS mama DESTINATION lib)

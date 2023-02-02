@@ -23,13 +23,17 @@ EXPOSE 50051
 
 ENV CC=clang CXX=clang++
 
+
 RUN mkdir -p /build && \
+    mkdir -p /mama && \
     cd /build && \
-    cmake -DCMAKE_BUILD_TYPE=Release /src/server && \
-    make -j4
-RUN cd /build &&  make -j4 tilegen
-RUN \
-    mkdir -p /app && \
-    ln -s /build/mama_server /app/mama_server && \
-    ln -s /build/mama/tilegen /app/tilegen
-WORKDIR /app
+    cmake -DCMAKE_INSTALL_PREFIX=/mama -DCMAKE_BUILD_TYPE=Release /src/server && \
+    make -j4 && \
+    make -j4 install
+
+# RUN cd /build &&  make -j4 tilegen
+# RUN \
+#     mkdir -p /app && \
+#     ln -s /build/mama_server /app/mama_server && \
+#     ln -s /build/mama/tilegen /app/tilegen
+# WORKDIR /app
