@@ -19,3 +19,9 @@
 [submodule "thirdparty/Catch2"]
 	path = thirdparty/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "thirdparty/cheap-ruler-cpp"]
+	path = thirdparty/cheap-ruler-cpp
+	url = https://github.com/mapbox/cheap-ruler-cpp.git
+[submodule "thirdparty/geometry.hpp"]
+	path = thirdparty/geometry.hpp
+	url = https://github.com/mapbox/geometry.hpp.git

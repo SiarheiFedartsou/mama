@@ -328,7 +328,34 @@ private:
 } // namespace tilegen
 } // namespace mama
 
+
+/*
+
+{
+  "type":"FeatureCollection",
+  "features":[
+    {
+      "type":"Feature",
+      "geometry": {
+        "type":"Polygon",
+        "coordinates":[[
+          [20.739160051260014939, 52.566151771902013934],
+          [20.739160051260014939, 52.515945072026035234],
+          [20.647314344574770217, 52.515945072026035234],
+          [20.647314344574770217, 52.566151771902013934],
+          [20.739160051260014939, 52.566151771902013934]]]
+      },
+      "properties":{"name":"area1"}
+    }
+  ]
+}
+
+*/
+
 int main(int argc, char **argv) {
+  S2Cell mycell{S2CellId{5124713471023251456}};
+  std::cerr << std::setprecision(20) << mycell.GetRectBound().lat_hi().degrees() << ", " << mycell.GetRectBound().lng_hi().degrees() << ", " << mycell.GetRectBound().lat_lo().degrees() << ", " << mycell.GetRectBound().lng_lo().degrees() << std::endl;
+  std::cerr << S2Cell::AverageArea(11) << std::endl;
   using namespace mama::tilegen;
   if (argc != 3) {
     std::cerr << "Usage: " << argv[0] << " OSMFILE OUTPUTFOLDER\n";
