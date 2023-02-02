@@ -25,7 +25,9 @@ target_include_directories(tilegen
         ${CMAKE_CURRENT_BINARY_DIR} 
         ${Protobuf_INCLUDE_DIRS} 
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/protozero/include 
-        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/libosmium/include   
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/libosmium/include  
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include 
 )
 
 add_library(mama src/mama.cc src/graph/graph.cc ${PROTO_SRCS} ${PROTO_HDRS})
@@ -37,10 +39,16 @@ target_include_directories(
         ${CMAKE_CURRENT_BINARY_DIR} 
         ${Protobuf_INCLUDE_DIRS} 
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/spdlog/include
+
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include
 )
 
 add_subdirectory(thirdparty/Catch2)
-add_executable(tests test/base/angle_tests.cc test/graph/graph_tests.cc)
+add_executable(tests test/base/angle_tests.cc test/base/coordinate_tests.cc test/graph/graph_tests.cc)
 target_link_libraries(tests PRIVATE mama Catch2::Catch2 Catch2::Catch2WithMain)
-target_include_directories(tests PRIVATE src)
+target_include_directories(tests PRIVATE 
+    src 
+    ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
+    ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include)
 

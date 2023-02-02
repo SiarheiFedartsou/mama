@@ -60,4 +60,6 @@ target_include_directories(mama_server
     SYSTEM PRIVATE
       ${CMAKE_CURRENT_BINARY_DIR}
       ${CMAKE_CURRENT_LIST_DIR}/../thirdparty/spdlog/include
+      ${CMAKE_CURRENT_LIST_DIR}/../thirdparty/geometry.hpp/include
+      ${CMAKE_CURRENT_LIST_DIR}/../thirdparty/cheap-ruler-cpp/include
 )

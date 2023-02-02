@@ -3,6 +3,8 @@
 #include <s2/s2earth.h>
 #include <s2/s2latlng.h>
 
+#include <mapbox/cheap_ruler.hpp>
+
 namespace mama {
 
 struct Coordinate {
@@ -20,28 +22,23 @@ struct Coordinate {
 
   S2LatLng AsS2LatLng() const { return S2LatLng::FromDegrees(y, x); }
 
-  // TODO: use cheap ruler
+  // returns distance to `coordinate` in meters
   double Distance(const Coordinate &coordinate) const {
-    return S2Earth::ToMeters(AsS2LatLng().Normalized().GetDistance(
-        coordinate.AsS2LatLng().Normalized()));
+    // TODO: we can cache rulers by latitude and reuse them
+    mapbox::cheap_ruler::CheapRuler ruler{lat(), mapbox::cheap_ruler::CheapRuler::Meters};
+
+    return ruler.distance({x, y}, {coordinate.x, coordinate.y});
   }
 
+  // returns bearing in direction of `coordinate` in degrees
   double BearingTo(const Coordinate &coordinate) const {
+    mapbox::cheap_ruler::CheapRuler ruler{lat(), mapbox::cheap_ruler::CheapRuler::Meters};
 
-    auto radians = [](double degrees) { return degrees * M_PI / 180.0; };
-    auto degrees = [](double radians) { return radians * 180.0 / M_PI; };
-
-    double teta1 = radians(lat());
-    double teta2 = radians(coordinate.lat());
-    double delta1 = radians(coordinate.lat() - lat());
-    double delta2 = radians(coordinate.lng() - lng());
-
-    double y = std::sin(delta2) * std::cos(teta2);
-    double x = std::cos(teta1) * std::sin(teta2) -
-               std::sin(teta1) * std::cos(teta2) * std::cos(delta2);
-    double bearing = std::atan2(y, x);
-    bearing = degrees(bearing);
-    bearing = std::fmod(bearing + 360, 360);
+    auto bearing = ruler.bearing({x, y}, {coordinate.x, coordinate.y});
+    if (bearing < 0) {
+      bearing += 360;
+    }
+    assert(bearing >= 0.0 && bearing <= 360.0);
     return bearing;
   }
 };

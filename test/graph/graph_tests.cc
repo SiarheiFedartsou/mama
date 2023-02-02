@@ -29,9 +29,9 @@ TEST_CASE("Project properly finds projections on graph") {
                  Catch::Matchers::WithinAbs(3.596, 1e-3));
 
     REQUIRE_THAT(projections[0].bearing_deg,
-                 Catch::Matchers::WithinAbs(27.6450, 1e-3));
+                 Catch::Matchers::WithinAbs(27.7279793901, 1e-3));
     REQUIRE_THAT(projections[1].bearing_deg,
-                 Catch::Matchers::WithinAbs(207.6451, 1e-3));
+                 Catch::Matchers::WithinAbs(207.7278671815, 1e-3));
 
     REQUIRE(projections[0].distance_m == projections[1].distance_m);
 
