@@ -28,6 +28,7 @@ target_include_directories(tilegen
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/libosmium/include  
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include 
+        ${CMAKE_CURRENT_LIST_DIR}/thirdparty/spdlog/include
 )
 
 add_library(mama src/mama.cc src/graph/graph.cc ${PROTO_SRCS} ${PROTO_HDRS})
