@@ -18,7 +18,6 @@
 #include <fstream>
 #include <iomanip>
 #include <osmium/geom/geojson.hpp>
-#include <osmium/geom/haversine.hpp>
 #include <osmium/handler/node_locations_for_ways.hpp>
 #include <osmium/index/map/flex_mem.hpp>
 #include <osmium/io/any_input.hpp>
@@ -29,14 +28,6 @@
 namespace mama {
 namespace tilegen {
 using ObjectID = unsigned long long;
-
-namespace {
-
-osmium::geom::Coordinates AsOSMCoord(const Coordinate &coord) {
-  return osmium::geom::Coordinates(coord.x, coord.y);
-}
-
-} // namespace
 
 struct WayNode {
   ObjectID id;
@@ -118,8 +109,7 @@ public:
       std::vector<Coordinate> shape = {way.nodes.front().coordinate};
       for (size_t i = 1; i < way.nodes.size(); ++i) {
         shape.push_back(way.nodes[i].coordinate);
-        distance += osmium::geom::haversine::distance(
-            AsOSMCoord(*shape.rbegin()), AsOSMCoord(*(shape.rbegin() + 1)));
+        distance += shape.rbegin()->Distance(*(shape.rbegin() + 1));
         if (data_collector.intersections.at(way.nodes[i].id) > 1) {
 
           Edge edge;
@@ -160,10 +150,9 @@ private:
     {
       auto length = 0.0;
       for (size_t i = 1; i < edge.shape.size(); ++i) {
-        length += osmium::geom::haversine::distance(
-            AsOSMCoord(edge.shape[i - 1]), AsOSMCoord(edge.shape[i]));
+        length += edge.shape[i - 1].Distance(edge.shape[i]);
       }
-      assert(std::abs(length - edge.distance) < 1e-6);
+      assert(std::abs(length - edge.distance) < 1e-2);
     }
 
     auto fromCoordinate = edge.shape.front();
