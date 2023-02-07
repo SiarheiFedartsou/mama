@@ -29,7 +29,6 @@ EXPOSE 50051
 
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
-    libexpat1-dev \
     libprotobuf-dev \
     && rm -rf /var/lib/apt/lists/*
 
