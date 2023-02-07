@@ -5,8 +5,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
 
-find_package(EXPAT REQUIRED)
-find_package(BZip2 REQUIRED)
 find_package(ZLIB REQUIRED)
 add_subdirectory(thirdparty/abseil-cpp)
 add_subdirectory(thirdparty/s2geometry)
