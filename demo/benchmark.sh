@@ -1,0 +1,1 @@
+ghz --total 100000 --insecure --proto ./server/mama.proto --call mama.server.api.MamaService.Match --data '{"entries": [{"location": {"longitude": 7.41795, "latitude": 43.73247}}]}' localhost:50051
