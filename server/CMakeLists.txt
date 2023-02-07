@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 project(mama_server)
 
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
 
-add_subdirectory(.. ${CMAKE_CURRENT_BINARY_DIR}/mama EXCLUDE_FROM_ALL)
+add_subdirectory(.. ${CMAKE_CURRENT_BINARY_DIR}/mama)
 
 # we use system's SSL to avoid issues on M1 macs we currently have with gRPC's bundled SSL
 set(gRPC_SSL_PROVIDER "package"  CACHE STRING "")
@@ -64,4 +66,4 @@ target_include_directories(mama_server
       ${CMAKE_CURRENT_LIST_DIR}/../thirdparty/cheap-ruler-cpp/include
 )
 
-install(TARGETS mama_server tilegen mama DESTINATION bin)
+install(TARGETS mama_server DESTINATION bin)

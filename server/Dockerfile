@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 AS builder
 
 COPY . /src
 
@@ -15,25 +15,24 @@ RUN apt-get update && apt-get install -y \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
-
-
-
-
-EXPOSE 50051
-
 ENV CC=clang CXX=clang++
 
 
 RUN mkdir -p /build && \
     mkdir -p /mama && \
     cd /build && \
-    cmake -DCMAKE_INSTALL_PREFIX=/mama -DCMAKE_BUILD_TYPE=Release /src/server && \
-    make -j4 && \
+    cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release /src/server && \
+    make -j4  && \
     make -j4 install
 
-# RUN cd /build &&  make -j4 tilegen
-# RUN \
-#     mkdir -p /app && \
-#     ln -s /build/mama_server /app/mama_server && \
-#     ln -s /build/mama/tilegen /app/tilegen
-# WORKDIR /app
+FROM ubuntu:22.04
+
+EXPOSE 50051
+
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    libexpat1-dev \
+    libprotobuf-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/bin/tilegen /usr/local/bin/mama_server /usr/local/bin/
