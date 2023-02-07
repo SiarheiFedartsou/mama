@@ -6,8 +6,6 @@ RUN apt-get update && apt-get install -y \
     clang \
     libssl-dev \
     pkg-config \
-    libexpat1-dev \
-    libbz2-dev \
     zlib1g-dev \
     protobuf-compiler \
     libprotoc-dev \

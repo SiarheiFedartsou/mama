@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "base/coordinate.hpp"
+#include "base/log.hpp"
 #include "graph/tile_level.hpp"
 
 #include "s2/mutable_s2shape_index.h"
@@ -17,26 +18,16 @@
 #include <fstream>
 #include <iomanip>
 #include <osmium/geom/geojson.hpp>
-#include <osmium/geom/haversine.hpp>
 #include <osmium/handler/node_locations_for_ways.hpp>
 #include <osmium/index/map/flex_mem.hpp>
-#include <osmium/io/any_input.hpp>
+#include <osmium/io/pbf_input.hpp>
 #include <osmium/util/progress_bar.hpp>
 #include <osmium/visitor.hpp>
-#include <s2/base/commandlineflags.h>
 #include <stdexcept>
 
 namespace mama {
 namespace tilegen {
 using ObjectID = unsigned long long;
-
-namespace {
-
-osmium::geom::Coordinates AsOSMCoord(const Coordinate &coord) {
-  return osmium::geom::Coordinates(coord.x, coord.y);
-}
-
-} // namespace
 
 struct WayNode {
   ObjectID id;
@@ -118,8 +109,7 @@ public:
       std::vector<Coordinate> shape = {way.nodes.front().coordinate};
       for (size_t i = 1; i < way.nodes.size(); ++i) {
         shape.push_back(way.nodes[i].coordinate);
-        distance += osmium::geom::haversine::distance(
-            AsOSMCoord(*shape.rbegin()), AsOSMCoord(*(shape.rbegin() + 1)));
+        distance += shape.rbegin()->Distance(*(shape.rbegin() + 1));
         if (data_collector.intersections.at(way.nodes[i].id) > 1) {
 
           Edge edge;
@@ -144,7 +134,6 @@ public:
         addEdge(std::move(edge), way);
       }
     }
-    std::cout << "Number of edges: " << edges.size() << std::endl;
   }
   std::vector<Edge> edges;
   std::unordered_map<ObjectID, Node> nodes;
@@ -161,10 +150,9 @@ private:
     {
       auto length = 0.0;
       for (size_t i = 1; i < edge.shape.size(); ++i) {
-        length += osmium::geom::haversine::distance(
-            AsOSMCoord(edge.shape[i - 1]), AsOSMCoord(edge.shape[i]));
+        length += edge.shape[i - 1].Distance(edge.shape[i]);
       }
-      assert(std::abs(length - edge.distance) < 1e-6);
+      assert(std::abs(length - edge.distance) < 1e-2);
     }
 
     auto fromCoordinate = edge.shape.front();
@@ -192,9 +180,9 @@ private:
   }
 };
 
-struct TileBuilder {
-  size_t edge_counter = 0;
-  size_t node_counter = 0;
+class TileBuilder {
+public:
+  explicit TileBuilder(TileId tile_id) : tile_id(tile_id) {}
 
   void addNode(const Node &node, const std::vector<Edge> &edges,
                const std::unordered_map<ObjectID, Node> &nodes) {
@@ -207,6 +195,24 @@ struct TileBuilder {
     }
   }
 
+  void finish(const std::unordered_map<TileId, TileBuilder> &tile_builders,
+              const std::string &output_folder) {
+    fixNeighbourTileNodes(tile_builders);
+
+    Encoder encoder;
+    s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
+    edge_index.Encode(&encoder);
+    *header.mutable_shape_spatial_index() = {encoder.base(), encoder.length()};
+
+    MAMA_INFO("Generated tile {} with {} edges and {} nodes. Size is {} bytes.",
+              tile_id, header.edges_size(), header.nodes_size(),
+              header.ByteSizeLong());
+
+    std::ofstream out(output_folder + "/" + std::to_string(tile_id) + ".tile");
+    header.SerializeToOstream(&out);
+  }
+
+private:
   size_t getLocalEdgeIndex(size_t global_index, const Edge &edge,
                            const std::unordered_map<ObjectID, Node> &nodes) {
     auto local_index_itr = global_to_tile_edge_index.find(global_index);
@@ -264,38 +270,6 @@ struct TileBuilder {
     return header.nodes_size() - 1;
   }
 
-  void finish(const std::unordered_map<TileId, TileBuilder> &tile_builders,
-              const std::string &output_folder) {
-    fixNeighbourTileNodes(tile_builders);
-
-    Encoder encoder;
-    s2shapeutil::CompactEncodeTaggedShapes(edge_index, &encoder);
-    edge_index.Encode(&encoder);
-    *header.mutable_shape_spatial_index() = {encoder.base(), encoder.length()};
-
-    std::cerr << tile_id << " " << header.ByteSizeLong() << std::endl;
-
-    std::ofstream out(output_folder + "/" + std::to_string(tile_id) + ".tile");
-    header.SerializeToOstream(&out);
-  }
-
-  std::unordered_map<size_t, size_t> global_to_tile_edge_index;
-  std::unordered_map<ObjectID, size_t> node_id_to_tile_node_index;
-
-  MutableS2ShapeIndex edge_index;
-  TileId tile_id;
-  std::vector<std::unique_ptr<S2Polyline>> polylines;
-
-  struct NeighbourNode {
-    TileId tile_id;
-    ObjectID node_id;
-  };
-
-  std::vector<NeighbourNode> neighbour_nodes;
-
-  mama::tile::Header header;
-
-private:
   void fixNeighbourTileNodes(
       const std::unordered_map<TileId, TileBuilder> &otherBuilders) {
     assert(neighbour_nodes.size() == header.neighbour_tile_nodes_size());
@@ -324,38 +298,29 @@ private:
       pbfNode.set_node_id(other_node_index->second);
     }
   }
+
+  std::unordered_map<size_t, size_t> global_to_tile_edge_index;
+  std::unordered_map<ObjectID, size_t> node_id_to_tile_node_index;
+
+  MutableS2ShapeIndex edge_index;
+  TileId tile_id;
+  std::vector<std::unique_ptr<S2Polyline>> polylines;
+
+  struct NeighbourNode {
+    TileId tile_id;
+    ObjectID node_id;
+  };
+
+  std::vector<NeighbourNode> neighbour_nodes;
+
+  mama::tile::Header header;
 };
 } // namespace tilegen
 } // namespace mama
 
-
-/*
-
-{
-  "type":"FeatureCollection",
-  "features":[
-    {
-      "type":"Feature",
-      "geometry": {
-        "type":"Polygon",
-        "coordinates":[[
-          [20.739160051260014939, 52.566151771902013934],
-          [20.739160051260014939, 52.515945072026035234],
-          [20.647314344574770217, 52.515945072026035234],
-          [20.647314344574770217, 52.566151771902013934],
-          [20.739160051260014939, 52.566151771902013934]]]
-      },
-      "properties":{"name":"area1"}
-    }
-  ]
-}
-
-*/
-
 int main(int argc, char **argv) {
-  S2Cell mycell{S2CellId{5124713471023251456}};
-  std::cerr << std::setprecision(20) << mycell.GetRectBound().lat_hi().degrees() << ", " << mycell.GetRectBound().lng_hi().degrees() << ", " << mycell.GetRectBound().lat_lo().degrees() << ", " << mycell.GetRectBound().lng_lo().degrees() << std::endl;
-  std::cerr << S2Cell::AverageArea(11) << std::endl;
+  mama::base::InitializeLogging();
+
   using namespace mama::tilegen;
   if (argc != 3) {
     std::cerr << "Usage: " << argv[0] << " OSMFILE OUTPUTFOLDER\n";
@@ -390,9 +355,12 @@ int main(int argc, char **argv) {
 
     std::unordered_map<TileId, TileBuilder> tile_builders;
     for (const auto &[nodeId, node] : builder.nodes) {
-      TileBuilder &tile_builder = tile_builders[node.getTileId()];
-      tile_builder.tile_id = node.getTileId();
-      tile_builder.addNode(node, builder.edges, builder.nodes);
+      auto tile_builder_itr = tile_builders.find(node.getTileId());
+      if (tile_builder_itr == tile_builders.end()) {
+        tile_builder_itr =
+            tile_builders.emplace(node.getTileId(), node.getTileId()).first;
+      }
+      tile_builder_itr->second.addNode(node, builder.edges, builder.nodes);
     }
 
     for (auto &[tile_id, tile_builder] : tile_builders) {

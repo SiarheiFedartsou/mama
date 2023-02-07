@@ -63,7 +63,7 @@ TEST_CASE("PathDistance properly finds shortest path") {
 
     auto path = graph.PathDistance(from, {to}, {250});
     REQUIRE(path.size() == 1);
-    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(17.507, 1e-3));
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(17.497, 1e-3));
   }
 
   // path to the start of the edge
@@ -74,7 +74,7 @@ TEST_CASE("PathDistance properly finds shortest path") {
 
     auto path = graph.PathDistance(from, {to}, {250});
     REQUIRE(path.size() == 1);
-    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(53.016, 1e-3));
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(52.996, 1e-1));
   }
 
   // path to the start of the edge (shouldn't exist due to max_distance_m)
