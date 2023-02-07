@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(mama)
 
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
@@ -51,3 +53,4 @@ target_include_directories(tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
     ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include)
 
+install(TARGETS tilegen DESTINATION bin)
