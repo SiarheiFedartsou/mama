@@ -20,7 +20,7 @@
 #include <osmium/geom/geojson.hpp>
 #include <osmium/handler/node_locations_for_ways.hpp>
 #include <osmium/index/map/flex_mem.hpp>
-#include <osmium/io/any_input.hpp>
+#include <osmium/io/pbf_input.hpp>
 #include <osmium/util/progress_bar.hpp>
 #include <osmium/visitor.hpp>
 #include <stdexcept>
