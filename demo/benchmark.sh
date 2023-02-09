@@ -7,7 +7,7 @@ mv ghz /usr/local/bin
 
 
 # TODO: kill container afterwards
-docker run -d -p 50051:50051 -v $(pwd)/tiles:/tiles -t mama-server /tiles
+docker run -d -p 50051:50051 -v /tiles:$(pwd)/tiles -t mama-server /tiles
 
 # TODO: add normal healthcheck
 sleep 10
