@@ -5,6 +5,8 @@ set -e
 curl -L https://github.com/bojand/ghz/releases/download/v0.114.0/ghz-linux-x86_64.tar.gz | tar xvz
 mv ghz /usr/local/bin
 
+echo "PWD $PWD"
+ls $(pwd)
 
 # TODO: kill container afterwards
 docker run -d -p 50051:50051 -v /tiles:$(pwd)/tiles -t mama-server /tiles
