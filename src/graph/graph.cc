@@ -18,11 +18,6 @@
 
 namespace mama {
 
-bool operator<(const EdgeId &lhs, const EdgeId &rhs) {
-  return std::tie(lhs.tile_id, lhs.edge_index) <
-         std::tie(rhs.tile_id, rhs.edge_index);
-}
-
 class Tile {
 public:
   explicit Tile(TileId tile_id, const std::string &path) : tile_id_(tile_id) {
@@ -105,6 +100,7 @@ private:
   EncodedS2ShapeIndex spatial_index_;
 };
 
+
 Graph::Graph(const std::string &tiles_folder) : tiles_folder_(tiles_folder) {}
 
 std::vector<double> Graph::PathDistance(const PointOnGraph &from,
@@ -122,25 +118,30 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   std::vector<double> results;
   results.resize(to.size(), std::numeric_limits<double>::max());
 
-  std::map<EdgeId, size_t> to_find;
-  for (size_t index = 0; index < to.size(); ++index) {
-    to_find[to[index].edge_id] = index;
-  }
 
-  std::set<EdgeId> visited;
-  std::priority_queue<Distance> queue;
+
   auto init_edge = GetEdge(from.edge_id);
   if (!init_edge) {
     return results;
   }
+
+  std::unordered_map<EdgeId, size_t, EdgeIdHasher> to_find;
+  to_find.reserve(to.size());
+  for (size_t index = 0; index < to.size(); ++index) {
+    to_find[to[index].edge_id] = index;
+  }
+
+  std::unordered_set<EdgeId, EdgeIdHasher> visited;
+  std::priority_queue<Distance> queue;
 
   queue.push({init_edge->length() * (1.0 - from.offset), from.edge_id});
   while (!queue.empty()) {
     auto current = queue.top();
     queue.pop();
 
-    if (to_find.find(current.edge_id) != to_find.end()) {
-      auto index = to_find[current.edge_id];
+    auto to_find_itr = to_find.find(current.edge_id);
+    if (to_find_itr != to_find.end()) {
+      auto index = to_find_itr->second;
 
       auto finish_edge = GetEdge(to[index].edge_id);
       auto distance =
@@ -149,7 +150,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       // this is needed to handle case when `from` and `to` are on the same
       // edge, but `to` is before `from` by offset
       if (distance >= 0.0) {
-        to_find.erase(current.edge_id);
+        to_find.erase(to_find_itr);
         results[index] = distance;
         continue;
       }
@@ -162,12 +163,17 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       continue;
     }
 
-    auto adjacent_edge_ids = GetAdjacentEdges(*target_node);
-    for (const auto &adjacent_edge_id : adjacent_edge_ids) {
-      if (visited.find(adjacent_edge_id) != visited.end()) {
+    auto node = GetNode(*target_node);
+
+    // it shouldn't be null, because we already checked it above
+    assert(node); 
+
+    for (const auto edge_index: node->adjacent_edges()) {
+      EdgeId adjacent_edge_id{target_node->tile_id, edge_index};
+      
+      if (!visited.insert(adjacent_edge_id).second) {
         continue;
       }
-      visited.insert(adjacent_edge_id);
 
       auto edge = GetEdge(adjacent_edge_id);
       if (!edge) {
@@ -234,18 +240,6 @@ std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
         tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
     return {{neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()}};
   }
-}
-
-std::vector<EdgeId> Graph::GetAdjacentEdges(const NodeId &node_id) {
-  auto node = GetNode(node_id);
-  if (!node) {
-    return {};
-  }
-  std::vector<EdgeId> results;
-  for (const auto edge_index : node->adjacent_edges()) {
-    results.push_back({node_id.tile_id, edge_index});
-  }
-  return results;
 }
 
 std::shared_ptr<Tile> Graph::GetTile(TileId tile_id) {
