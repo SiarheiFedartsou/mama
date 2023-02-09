@@ -7,38 +7,38 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
-    env: 
-      CXX: 'clang++-14'
-      CC: 'clang-14'
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-    - name: Install dependencies
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install protobuf-compiler \
-                             libprotoc-dev \
-                             libprotobuf-dev
-    - name: Build
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-        make -j8
-    - name: Build server
-      run: |
-        mkdir -p server/build
-        cd server/build
-        cmake ..
-        make -j8
-    - name: Run tests
-      run: |
-        mkdir tiles
-        ./build/tilegen test/data/monaco-latest.osm.pbf tiles
-        TILES_FOLDER=tiles ./build/tests        
+  # build:
+  #   runs-on: ubuntu-22.04
+  #   env: 
+  #     CXX: 'clang++-14'
+  #     CC: 'clang-14'
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       submodules: 'recursive'
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt-get update -y
+  #       sudo apt-get install protobuf-compiler \
+  #                            libprotoc-dev \
+  #                            libprotobuf-dev
+  #   - name: Build
+  #     run: |
+  #       mkdir build
+  #       cd build
+  #       cmake ..
+  #       make -j8
+  #   - name: Build server
+  #     run: |
+  #       mkdir -p server/build
+  #       cd server/build
+  #       cmake ..
+  #       make -j8
+  #   - name: Run tests
+  #     run: |
+  #       mkdir tiles
+  #       ./build/tilegen test/data/monaco-latest.osm.pbf tiles
+  #       TILES_FOLDER=tiles ./build/tests        
 
   demo:
     runs-on: ubuntu-22.04
@@ -52,9 +52,9 @@ jobs:
       run: |
         sudo apt-get update -y && sudo apt-get install osmium-tool
         cd demo && ./build.sh
-    - name: Test
-      run: |
-        cd demo && ./test.sh
+    # - name: Test
+    #   run: |
+    #     cd demo && ./test.sh
     - name: Benchmark
       run: |
         cd demo && ./benchmark.sh

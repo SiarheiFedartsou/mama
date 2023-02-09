@@ -6,10 +6,10 @@ curl -L https://github.com/bojand/ghz/releases/download/v0.114.0/ghz-linux-x86_6
 mv ghz /usr/local/bin
 
 echo "PWD $PWD"
-ls $(pwd)
+ls $(pwd)/tiles
 
 # TODO: kill container afterwards
-docker run -d -p 50051:50051 -v /tiles:$(pwd)/tiles -t mama-server /tiles
+docker run -d -p 50051:50051 -v $(pwd)/tiles:/tiles -t /app/mama-server /tiles
 
 # TODO: add normal healthcheck
 sleep 10
