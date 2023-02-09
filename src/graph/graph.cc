@@ -152,8 +152,6 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       if (distance >= 0.0) {
         to_find.erase(to_find_itr);
         results[index] = distance;
-        // TODO: is this continue needed?
-        continue;
       }
     }
 
