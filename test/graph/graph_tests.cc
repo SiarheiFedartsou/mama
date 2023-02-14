@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/benchmark/catch_benchmark.hpp>
+#include <catch2/benchmark/catch_constructor.hpp>
 
 namespace mama {
 namespace {
@@ -10,6 +12,44 @@ std::string TilesFolder() {
   return getenv("TILES_FOLDER");
 }
 } // namespace
+
+
+TEST_CASE("Routing benchmark") {
+  Graph graph(TilesFolder());
+
+  BENCHMARK_ADVANCED("PathDistance")(Catch::Benchmark::Chronometer meter) {
+    auto from_projections = graph.Project({7.41795, 43.73247}, 250);
+    auto to_projections = graph.Project({7.416920848865175, 43.73151313625209}, 250);
+
+    std::vector<PointOnGraph> from;
+    from.reserve(from_projections.size());
+    for (const auto &projection : from_projections) {
+      from.push_back(projection.point_on_graph);
+    }
+
+
+    std::vector<PointOnGraph> to;
+    to.reserve(to_projections.size());
+    for (const auto &projection : to_projections) {
+      to.push_back(projection.point_on_graph);
+    }
+
+
+    std::vector<double> result;
+    result.reserve(from.size() * to.size());
+
+    meter.measure([&] { 
+      for (const auto &from_point : from) {
+        auto result = graph.PathDistance(from_point, to, {250});
+        for (const auto &distance : result) {
+          result.push_back(distance);
+        }
+      }
+      return result;
+    });
+  };
+}
+
 
 TEST_CASE("Project properly finds projections on graph") {
   Graph graph(TilesFolder());
