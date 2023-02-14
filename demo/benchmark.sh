@@ -7,7 +7,7 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 curl -L https://github.com/bojand/ghz/releases/download/v0.114.0/ghz-linux-x86_64.tar.gz | tar xvz
 mv ghz /usr/local/bin
 
-CONTAINER_ID=$(docker run -d -p 50051:50051 -v $SCRIPTPATH/tiles:/tiles -it mama-server /app/mama_server /tiles)
+CONTAINER_ID=$(docker run -d -p 50051:50051 -v $SCRIPTPATH/tiles:/tiles -it mama-server mama_server /tiles)
 
 # TODO: add normal healthcheck
 sleep 3
