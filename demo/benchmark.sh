@@ -21,8 +21,8 @@ ghz --total 100000 --insecure --proto $SCRIPTPATH/protos/mama.proto --call mama.
 
 
 # with state
-STATE=$(node $SCRIPTPATH/benchmark_get_state.js 21.1245 52.2441)
+STATE=$(node $SCRIPTPATH/benchmark_get_state.js 21.01822 52.24858)
 DATA="{\"entries\": [{\"state\": \"${STATE}\", \"location\": {\"longitude\": 21.0245, \"latitude\": 52.2441}}]}"
 
-echo "Results with state:"
+echo "Results with state(${STATE}):"
 ghz --total 100000 --insecure --proto $SCRIPTPATH/protos/mama.proto --call mama.server.api.MamaService.Match --data "$DATA" localhost:50051
