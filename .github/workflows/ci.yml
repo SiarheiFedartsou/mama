@@ -57,7 +57,7 @@ jobs:
         cd demo && ./test.sh
     - name: Benchmark
       run: |
-        cd demo && ./benchmark.sh
+        cd demo && npm install && ./benchmark.sh
     
 
          
