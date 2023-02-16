@@ -21,14 +21,10 @@ struct EdgeId {
   bool operator==(const EdgeId &other) const {
     return tile_id == other.tile_id && edge_index == other.edge_index;
   }
-};
 
-// TODO: define hash function for EdgeId
-struct EdgeIdHasher
-{
-  std::size_t operator()(const EdgeId& e) const
-  {
-    return std::hash<TileId>()(e.tile_id) ^ std::hash<uint32_t>()(e.edge_index);
+  template <typename H>
+  friend H AbslHashValue(H h, const EdgeId& e) {
+    return H::combine(std::move(h), e.tile_id, e.edge_index);
   }
 };
 

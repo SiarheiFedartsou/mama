@@ -1,20 +1,26 @@
 #include "mama.hpp"
 
-#include <s2/encoded_s2shape_index.h>
-#include <s2/s2closest_edge_query.h>
 #include "graph/tile_level.hpp"
 #include "state.pb.h"
 #include "tile.pb.h"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
+
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
+
 #include <s2/s2cap.h>
 #include <s2/s2earth.h>
 #include <s2/s2latlng.h>
 #include <s2/s2region_coverer.h>
 #include <s2/s2shapeutil_coding.h>
 #include <s2/util/coding/coder.h>
+#include <s2/encoded_s2shape_index.h>
+#include <s2/s2closest_edge_query.h>
+
 
 namespace mama {
 
@@ -125,13 +131,13 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     return results;
   }
 
-  std::unordered_map<EdgeId, size_t, EdgeIdHasher> to_find;
+  absl::flat_hash_map<EdgeId, size_t> to_find;
   to_find.reserve(to.size());
   for (size_t index = 0; index < to.size(); ++index) {
     to_find[to[index].edge_id] = index;
   }
 
-  std::unordered_set<EdgeId, EdgeIdHasher> visited;
+  absl::flat_hash_set<EdgeId> visited;
   std::priority_queue<Distance> queue;
 
   queue.push({init_edge->length() * (1.0 - from.offset), from.edge_id});
