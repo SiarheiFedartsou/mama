@@ -4,7 +4,8 @@
 #include <unordered_map>
 #include <vector>
 #include "base/coordinate.hpp"
-#include <functional>
+#include "coverer.hpp"
+
 namespace mama {
 
 namespace tile {
@@ -71,7 +72,7 @@ private:
   std::shared_ptr<Tile> GetTile(TileId tile_id);
 
 private:
-
+  Coverer coverer_;
 
   std::unordered_map<TileId, std::shared_ptr<Tile>> tiles_;
   std::string tiles_folder_;

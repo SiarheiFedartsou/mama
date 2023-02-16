@@ -12,8 +12,6 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
-#include <s2/s2cap.h>
-#include <s2/s2earth.h>
 #include <s2/s2latlng.h>
 #include <s2/s2region_coverer.h>
 #include <s2/s2shapeutil_coding.h>
@@ -145,13 +143,14 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     auto current = queue.top();
     queue.pop();
 
+    const auto edge = GetEdge(current.edge_id);
+
     auto to_find_itr = to_find.find(current.edge_id);
     if (to_find_itr != to_find.end()) {
       auto index = to_find_itr->second;
 
-      auto finish_edge = GetEdge(to[index].edge_id);
       auto distance =
-          current.distance - finish_edge->length() * (1.0 - to[index].offset);
+          current.distance - edge->length() * (1.0 - to[index].offset);
 
       // this is needed to handle case when `from` and `to` are on the same
       // edge, but `to` is before `from` by offset
@@ -161,7 +160,6 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       }
     }
 
-    const auto edge = GetEdge(current.edge_id);
     auto target_node =
         GetTargetNode(current.edge_id.tile_id, edge->target_node_id());
     if (!target_node) {
@@ -181,9 +179,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       }
 
       auto edge = GetEdge(adjacent_edge_id);
-      if (!edge) {
-        continue;
-      }
+      assert(edge);
 
       auto distance = current.distance + edge->length();
       if (distance > options.max_distance_m) {
@@ -198,15 +194,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
 
 std::vector<Projection> Graph::Project(const Coordinate &coordinate,
                                        double radius_m) {
-  // TODO: make coverer class member
-  S2RegionCoverer::Options options;
-  options.set_fixed_level(graph::kTileLevel);
-  S2RegionCoverer coverer(options);
-
-  S2Cap cap(coordinate.AsS2LatLng().Normalized().ToPoint(),
-            S2Earth::MetersToChordAngle(radius_m));
-  std::vector<S2CellId> cells;
-  coverer.GetCovering(cap, &cells);
+  auto cells = coverer_.GetCovering(coordinate, radius_m);
 
   std::vector<Projection> results;
   for (const auto cellId : cells) {
@@ -236,11 +224,12 @@ std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
   if (node_index >= 0) {
     return {{tile_id, static_cast<uint32_t>(node_index)}};
   } else {
-    // TODO: -1 while encoding?
     auto tile = GetTile(tile_id);
     if (!tile) {
       return {};
     }
+    // indexes in `neighbour_tile_nodes` are encoded as negative values,
+    // 0 is used for usual nodes, so we start counting from -1 (that's why have this -1 here)
     const auto &neighbor_tile_node =
         tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
     return {{neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()}};
