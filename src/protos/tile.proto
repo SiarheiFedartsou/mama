@@ -1,6 +1,13 @@
 syntax = "proto3";
 package mama.tile;
 
+message DistanceTable {
+    // sorted edge ids
+    repeated uint32 edge_id = 1;
+    // distance in meters from edge which owns this table to the edge with correponding edge_id
+    repeated uint32 distance = 2;
+}
+
 message Edge {
     double length = 2;
 
@@ -9,6 +16,9 @@ message Edge {
 
     // id of shape in the `shape_spatial_index`
     uint32 shape_id = 5;
+
+    // optional distance table
+    DistanceTable distance_table = 6;
 }
 
 message Node {
