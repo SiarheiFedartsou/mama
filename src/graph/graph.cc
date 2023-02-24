@@ -98,6 +98,16 @@ public:
 
   const auto &header() const { return header_; }
 
+  double shortest_path(const tile::Edge& from_edge, size_t to_edge_index) {
+    assert(from_edge.has_distance_table());
+    const auto& distance_table = from_edge.distance_table();
+    auto itr = std::lower_bound(distance_table.edge_id().begin(), distance_table.edge_id().end(), to_edge_index);
+    if (itr == distance_table.edge_id().end() || *itr != to_edge_index) {
+      return std::numeric_limits<double>::max();
+    }
+    return static_cast<double>(distance_table.distance(std::distance(distance_table.edge_id().begin(), itr)));
+  }
+
 private:
   TileId tile_id_;
   tile::Header header_;
@@ -119,12 +129,29 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     }
   };
 
+  auto from_tile = GetTile(from.edge_id.tile_id);
+
+
   std::vector<double> results;
   results.resize(to.size(), std::numeric_limits<double>::max());
 
   std::map<EdgeId, size_t> to_find;
   for (size_t index = 0; index < to.size(); ++index) {
-    to_find[to[index].edge_id] = index;
+    if (to[index].edge_id.tile_id == from.edge_id.tile_id) {
+      // TODO: offsets !!!
+      if (to[index].edge_id.edge_index == from.edge_id.edge_index) {
+        results[index] = 0.0;
+      } else {
+        results[index] = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index), to[index].edge_id.edge_index);
+      }
+
+    } else {
+      to_find[to[index].edge_id] = index;
+    }
+  }
+
+  if (to_find.empty()) {
+    return results;
   }
 
   std::set<EdgeId> visited;

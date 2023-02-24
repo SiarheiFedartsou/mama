@@ -320,6 +320,10 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
   struct EdgeInfo {
     size_t edge_index = 0;
     uint32_t distance = 0;
+
+    bool operator<(const EdgeInfo &rhs) const {
+      return distance > rhs.distance;
+    }
   };
 
   struct DistanceTableEntry {
@@ -343,13 +347,13 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
 
       std::vector<DistanceTableEntry> distance_table;
 
-      std::queue<EdgeInfo> queue;
+      std::priority_queue<EdgeInfo> queue;
       std::unordered_set<size_t> visited_edges;
 
       queue.push(EdgeInfo{edge_index, 0});
 
       while (!queue.empty()) {
-        auto current = queue.front();
+        auto current = queue.top();
         queue.pop();
 
         if (visited_edges.find(current.edge_index) != visited_edges.end()) {
