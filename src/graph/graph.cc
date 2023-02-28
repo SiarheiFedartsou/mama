@@ -140,7 +140,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     if (to[index].edge_id.tile_id == from.edge_id.tile_id) {
       if (to[index].edge_id.edge_index == from.edge_id.edge_index && to[index].offset >= from.offset) {
         auto edge = from_tile->edges(to[index].edge_id.edge_index);
-        results[index] = edge->length() * (to[index].offset - from.offset);
+        results[index] = edge.length() * (to[index].offset - from.offset);
       } else {
         results[index] = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index), to[index].edge_id.edge_index);
 

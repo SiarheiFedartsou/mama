@@ -331,7 +331,7 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
     uint32_t distance = 0;
   };
 
-  constexpr uint32_t kMaxDistance = 150;
+  constexpr uint32_t kMaxDistance = 250;
 
   for (auto tile_id : tile_ids) {
    // int r = 0;
@@ -371,12 +371,12 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
         auto target_node = header.nodes(target_node_id);
         for (auto adjacent_edge_index: target_node.adjacent_edges()) {
           uint32_t length = static_cast<uint32_t>(header.edges(edge_index).length());
+
+          distance_table.push_back(DistanceTableEntry{adjacent_edge_index, current.distance});
           auto new_distance = current.distance + length;
           if (new_distance > kMaxDistance) {
             continue;
           }
-          distance_table.push_back(DistanceTableEntry{adjacent_edge_index, new_distance});
-
           queue.push(EdgeInfo{adjacent_edge_index, new_distance});
         }
       }
