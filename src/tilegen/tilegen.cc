@@ -85,11 +85,11 @@ public:
   std::unordered_map<ObjectID, Node> nodes;
 
 private:
-  void addNode(ObjectID nodeId, Coordinate coordinate) {
+  Node& addNode(ObjectID nodeId, Coordinate coordinate) {
     Node &node = nodes[nodeId];
     node.id = nodeId;
     node.coordinate = coordinate;
-    node.adjacent_edges.push_back(edges.size() - 1);
+    return node;
   }
 
   void addEdge(Edge &&edge, const OSMWay &fromWay) {
@@ -108,20 +108,26 @@ private:
     if (fromWay.oneway_direction == OnewayDirection::Forward) {
       edges.push_back(std::move(edge));
 
-      addNode(fromId, fromCoordinate);
+      addNode(fromId, fromCoordinate).adjacent_edges.push_back(edges.size() - 1);
+      addNode(toId, toCoordinate);
+    
     } else if (fromWay.oneway_direction == OnewayDirection::Backward) {
       std::reverse(edge.shape.begin(), edge.shape.end());
       std::swap(edge.from, edge.to);
       edges.push_back(std::move(edge));
-      addNode(toId, toCoordinate);
-    } else {
-      edges.push_back(edge);
 
       addNode(fromId, fromCoordinate);
+      addNode(toId, toCoordinate).adjacent_edges.push_back(edges.size() - 1);
+    } else {
+      edges.push_back(edge);
+      
+      addNode(fromId, fromCoordinate).adjacent_edges.push_back(edges.size() - 1);
+    
       std::reverse(edge.shape.begin(), edge.shape.end());
       std::swap(edge.from, edge.to);
       edges.push_back(std::move(edge));
-      addNode(toId, toCoordinate);
+
+      addNode(toId, toCoordinate).adjacent_edges.push_back(edges.size() - 1);
     }
   }
 };
@@ -193,8 +199,9 @@ private:
                  const std::unordered_map<ObjectID, Node> &nodes) {
     auto pbfEdge = header.add_edges();
     pbfEdge->set_length(edge.distance);
+    std::cerr << "b\n";
     pbfEdge->set_target_node_id(getLocalNodeIndex(nodes.at(edge.to)));
-
+ std::cerr << "a\n";
     std::vector<S2LatLng> latlngs;
     for (const auto &node : edge.shape) {
       latlngs.emplace_back(node.AsS2LatLng());

@@ -40,8 +40,7 @@ void OSMDataCollector::way(const osmium::Way &way) {
         {static_cast<ObjectID>(node.ref()),
          {node.location().lon(), node.location().lat()}});
   }
-  // TODO: !!!
-  // internal_way.oneway_direction = getOnewayDirection(way);
+  internal_way.oneway_direction = getOnewayDirection(way);
 
   ways.emplace_back(std::move(internal_way));
 }
