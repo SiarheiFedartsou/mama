@@ -138,11 +138,18 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   std::map<EdgeId, size_t> to_find;
   for (size_t index = 0; index < to.size(); ++index) {
     if (to[index].edge_id.tile_id == from.edge_id.tile_id) {
-      // TODO: offsets !!!
-      if (to[index].edge_id.edge_index == from.edge_id.edge_index) {
-        results[index] = 0.0;
+      if (to[index].edge_id.edge_index == from.edge_id.edge_index && to[index].offset >= from.offset) {
+        auto edge = from_tile->edges(to[index].edge_id.edge_index);
+        results[index] = edge->length() * (to[index].offset - from.offset);
       } else {
         results[index] = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index), to[index].edge_id.edge_index);
+
+        auto begin_edge = from_tile->edges(from.edge_id.edge_index);
+        auto end_edge = from_tile->edges(to[index].edge_id.edge_index);
+        if (results[index] != std::numeric_limits<double>::max()) {
+          results[index] += begin_edge.length() * (1.0 - from.offset);
+          results[index] += end_edge.length() * to[index].offset;
+        }
       }
 
     } else {
@@ -173,6 +180,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       auto distance =
           current.distance - finish_edge->length() * (1.0 - to[index].offset);
 
+      // TODO: is it really needed ??? It seems that it is not, driver could get there just due to a U-turn
       // this is needed to handle case when `from` and `to` are on the same
       // edge, but `to` is before `from` by offset
       if (distance >= 0.0) {
