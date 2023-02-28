@@ -5,6 +5,7 @@
 #include "base/coordinate.hpp"
 #include "base/log.hpp"
 #include "graph/tile_level.hpp"
+#include "osm_data_collector.hpp"
 
 #include "s2/mutable_s2shape_index.h"
 #include "s2/s1chord_angle.h"
@@ -17,65 +18,10 @@
 #include "tile.pb.h"
 #include <fstream>
 #include <iomanip>
-#include <osmium/geom/geojson.hpp>
-#include <osmium/handler/node_locations_for_ways.hpp>
-#include <osmium/index/map/flex_mem.hpp>
-#include <osmium/io/pbf_input.hpp>
-#include <osmium/util/progress_bar.hpp>
-#include <osmium/visitor.hpp>
 #include <stdexcept>
 
 namespace mama {
 namespace tilegen {
-using ObjectID = unsigned long long;
-
-struct WayNode {
-  ObjectID id;
-  Coordinate coordinate;
-};
-
-enum class OnewayDirection { None, Forward, Backward };
-
-struct Way {
-  std::vector<WayNode> nodes;
-  OnewayDirection oneway_direction = OnewayDirection::None;
-};
-
-struct DataCollector : public osmium::handler::Handler {
-public:
-  void way(const osmium::Way &way) {
-    if (!isWayAccessibleByAuto(way)) {
-      return;
-    }
-
-    Way internal_way;
-    for (const auto &node : way.nodes()) {
-      ++intersections[node.ref()];
-      internal_way.nodes.push_back(
-          {static_cast<ObjectID>(node.ref()),
-           {node.location().lon(), node.location().lat()}});
-    }
-    ways.emplace_back(std::move(internal_way));
-  }
-
-private:
-  bool isWayAccessibleByAuto(const osmium::Way &way) const {
-    static std::unordered_set<std::string> kAccessibleTags = {
-        "motorway",      "trunk",         "primary",      "secondary",
-        "tertiary",      "unclassified",  "residential",  "service",
-        "motorway_link", "trunk_link",    "primary_link", "secondary_link",
-        "tertiary_link", "living_street", "road"};
-    const char *highway = way.tags()["highway"];
-    if (highway == nullptr) {
-      return false;
-    }
-    return kAccessibleTags.contains(highway);
-  }
-
-public:
-  std::unordered_map<ObjectID, size_t> intersections;
-  std::vector<Way> ways;
-};
 
 struct Edge {
   ObjectID from;
@@ -100,7 +46,7 @@ struct Node {
 
 class GraphBuilder {
 public:
-  void build(const DataCollector &data_collector) {
+  void build(const OSMDataCollector &data_collector) {
     for (const auto &way : data_collector.ways) {
       double distance = 0.0;
 
@@ -146,7 +92,7 @@ private:
     node.adjacent_edges.push_back(edges.size() - 1);
   }
 
-  void addEdge(Edge &&edge, const Way &fromWay) {
+  void addEdge(Edge &&edge, const OSMWay &fromWay) {
     {
       auto length = 0.0;
       for (size_t i = 1; i < edge.shape.size(); ++i) {
@@ -330,25 +276,8 @@ int main(int argc, char **argv) {
   std::string output_folder = argv[2];
 
   try {
-    osmium::io::Reader reader{argv[1], osmium::osm_entity_bits::node |
-                                           osmium::osm_entity_bits::way};
-    osmium::ProgressBar progress{reader.file_size(), osmium::isatty(2)};
-
-    using Index = osmium::index::map::FlexMem<osmium::unsigned_object_id_type,
-                                              osmium::Location>;
-    using LocationHandler = osmium::handler::NodeLocationsForWays<Index>;
-
-    Index index;
-    LocationHandler location_handler{index};
-
-    DataCollector data_collector;
-
-    while (osmium::memory::Buffer buffer = reader.read()) {
-      osmium::apply(buffer, location_handler, data_collector);
-      progress.update(reader.offset());
-    }
-
-    progress.done();
+    OSMDataCollector data_collector;
+    data_collector.CollectFrom(argv[1]);
 
     GraphBuilder builder;
     builder.build(data_collector);
