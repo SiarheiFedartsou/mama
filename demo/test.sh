@@ -3,7 +3,7 @@ set -e
 
 # check that mama_server is possible to run (to avoid certain issues we had in the past)
 # TODO: this is not enough to be called normal regression test
-if docker run -t mama-demo mama_server | grep -vq 'Usage:'; then
+if docker run -t mama-server mama_server | grep -vq 'Usage:'; then
   echo "mama_server doesn't return usage info, something is wrong"
   exit 1
 fi

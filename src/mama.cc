@@ -239,6 +239,7 @@ Location MapMatchingController::Update(Location location) {
   if (previous_location_) {
     if (previous_location_->timestamp >= location.timestamp) {
       assert(previous_matched_location_);
+      // TODO: we probably should return error to client in this case
       return *previous_matched_location_;
     }
 
@@ -262,9 +263,7 @@ Location MapMatchingController::Update(Location location) {
     previous_location_ = location;
     return *previous_matched_location_;
   }
-
   auto result = map_matcher_->Update(location);
-
   previous_location_ = location;
   previous_matched_location_ = result;
   return result;
