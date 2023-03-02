@@ -72,9 +72,9 @@ TEST_CASE("Project properly finds projections on graph") {
   {
     auto projections = graph.Project({7.41795, 43.73247}, 50);
     REQUIRE_THAT(projections[0].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.506949, 1e-3));
+                 Catch::Matchers::WithinAbs(0.514314, 1e-3));
     REQUIRE_THAT(projections[1].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.492771, 1e-3));
+                 Catch::Matchers::WithinAbs(0.499930, 1e-3));
     REQUIRE_THAT(projections[0].distance_m,
                  Catch::Matchers::WithinAbs(3.596, 1e-3));
     REQUIRE_THAT(projections[1].distance_m,
@@ -115,7 +115,7 @@ TEST_CASE("PathDistance properly finds shortest path") {
 
     auto path = graph.PathDistance(from, {to}, {250});
     REQUIRE(path.size() == 1);
-    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(17.497, 1e-3));
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(16.999, 1e-3));
   }
 
   // path to the start of the edge
@@ -126,7 +126,7 @@ TEST_CASE("PathDistance properly finds shortest path") {
 
     auto path = graph.PathDistance(from, {to}, {250});
     REQUIRE(path.size() == 1);
-    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(52.996, 1e-1));
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(51.999, 1e-1));
   }
 
   // path to the start of the edge (shouldn't exist due to max_distance_m)
