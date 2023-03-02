@@ -35,10 +35,11 @@ TEST_CASE("Routing benchmark") {
     }
 
 
-    std::vector<double> result;
-    result.reserve(from.size() * to.size());
 
     meter.measure([&] { 
+      std::vector<double> result;
+      result.reserve(from.size() * to.size());
+
       for (const auto &from_point : from) {
         auto result = graph.PathDistance(from_point, to, {250});
         for (const auto &distance : result) {
@@ -48,6 +49,17 @@ TEST_CASE("Routing benchmark") {
       return result;
     });
   };
+}
+
+TEST_CASE("Projection benchmark") {
+  Graph graph(TilesFolder());
+
+  BENCHMARK_ADVANCED("Project")(Catch::Benchmark::Chronometer meter) {
+    meter.measure([&] { 
+      return graph.Project({7.41795, 43.73247}, 2500);
+    });
+  };
+
 }
 
 
