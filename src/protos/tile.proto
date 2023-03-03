@@ -9,16 +9,16 @@ message DistanceTable {
 }
 
 message Edge {
-    double length = 2;
+    uint32 length = 1;
 
     // if < 0, then the edge leaves tile and (abs(...) - 1) correponds to the object in the `neighbour_tile_nodes`
-    sint32 target_node_id = 4;
+    sint32 target_node_id = 2;
 
     // id of shape in the `shape_spatial_index`
-    uint32 shape_id = 5;
+    uint32 shape_id = 3;
 
     // optional distance table
-    DistanceTable distance_table = 6;
+    DistanceTable distance_table = 4;
 }
 
 message Node {

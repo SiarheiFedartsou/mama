@@ -35,10 +35,11 @@ TEST_CASE("Routing benchmark") {
     }
 
 
-    std::vector<double> result;
-    result.reserve(from.size() * to.size());
 
     meter.measure([&] { 
+      std::vector<double> result;
+      result.reserve(from.size() * to.size());
+
       for (const auto &from_point : from) {
         auto result = graph.PathDistance(from_point, to, {250});
         for (const auto &distance : result) {
@@ -48,6 +49,17 @@ TEST_CASE("Routing benchmark") {
       return result;
     });
   };
+}
+
+TEST_CASE("Projection benchmark") {
+  Graph graph(TilesFolder());
+
+  BENCHMARK_ADVANCED("Project")(Catch::Benchmark::Chronometer meter) {
+    meter.measure([&] { 
+      return graph.Project({7.41795, 43.73247}, 2500);
+    });
+  };
+
 }
 
 
@@ -60,9 +72,9 @@ TEST_CASE("Project properly finds projections on graph") {
   {
     auto projections = graph.Project({7.41795, 43.73247}, 50);
     REQUIRE_THAT(projections[0].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.506949, 1e-3));
+                 Catch::Matchers::WithinAbs(0.514314, 1e-3));
     REQUIRE_THAT(projections[1].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.492771, 1e-3));
+                 Catch::Matchers::WithinAbs(0.499930, 1e-3));
     REQUIRE_THAT(projections[0].distance_m,
                  Catch::Matchers::WithinAbs(3.596, 1e-3));
     REQUIRE_THAT(projections[1].distance_m,
