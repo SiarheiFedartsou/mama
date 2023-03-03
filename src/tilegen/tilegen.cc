@@ -198,10 +198,8 @@ private:
   size_t addEdge(const Edge &edge,
                  const std::unordered_map<ObjectID, Node> &nodes) {
     auto pbfEdge = header.add_edges();
-    pbfEdge->set_length(edge.distance);
-    std::cerr << "b\n";
+    pbfEdge->set_length(static_cast<uint32_t>(std::round(edge.distance)));
     pbfEdge->set_target_node_id(getLocalNodeIndex(nodes.at(edge.to)));
- std::cerr << "a\n";
     std::vector<S2LatLng> latlngs;
     for (const auto &node : edge.shape) {
       latlngs.emplace_back(node.AsS2LatLng());

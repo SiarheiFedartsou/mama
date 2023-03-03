@@ -38,7 +38,7 @@ target_include_directories(tilegen
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/spdlog/include
 )
 
-add_library(mama src/mama.cc src/graph/graph.cc ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(mama src/mama.cc src/graph/graph.cc src/graph/coverer.cc ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(mama PUBLIC s2 PRIVATE ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 target_include_directories(
     mama 

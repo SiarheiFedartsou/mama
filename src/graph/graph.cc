@@ -1,27 +1,26 @@
 #include "mama.hpp"
 
-#include <s2/encoded_s2shape_index.h>
-#include <s2/s2closest_edge_query.h>
 #include "graph/tile_level.hpp"
 #include "state.pb.h"
 #include "tile.pb.h"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
-#include <s2/s2cap.h>
-#include <s2/s2earth.h>
+
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
+
 #include <s2/s2latlng.h>
 #include <s2/s2region_coverer.h>
 #include <s2/s2shapeutil_coding.h>
 #include <s2/util/coding/coder.h>
+#include <s2/encoded_s2shape_index.h>
+#include <s2/s2closest_edge_query.h>
+
 
 namespace mama {
-
-bool operator<(const EdgeId &lhs, const EdgeId &rhs) {
-  return std::tie(lhs.tile_id, lhs.edge_index) <
-         std::tie(rhs.tile_id, rhs.edge_index);
-}
 
 class Tile {
 public:
@@ -105,6 +104,7 @@ private:
   EncodedS2ShapeIndex spatial_index_;
 };
 
+
 Graph::Graph(const std::string &tiles_folder) : tiles_folder_(tiles_folder) {}
 
 std::vector<double> Graph::PathDistance(const PointOnGraph &from,
@@ -122,57 +122,64 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   std::vector<double> results;
   results.resize(to.size(), std::numeric_limits<double>::max());
 
-  std::map<EdgeId, size_t> to_find;
-  for (size_t index = 0; index < to.size(); ++index) {
-    to_find[to[index].edge_id] = index;
-  }
 
-  std::set<EdgeId> visited;
-  std::priority_queue<Distance> queue;
+
   auto init_edge = GetEdge(from.edge_id);
   if (!init_edge) {
     return results;
   }
+
+  absl::flat_hash_map<EdgeId, size_t> to_find;
+  to_find.reserve(to.size());
+  for (size_t index = 0; index < to.size(); ++index) {
+    to_find[to[index].edge_id] = index;
+  }
+
+  absl::flat_hash_set<EdgeId> visited;
+  std::priority_queue<Distance> queue;
 
   queue.push({init_edge->length() * (1.0 - from.offset), from.edge_id});
   while (!queue.empty()) {
     auto current = queue.top();
     queue.pop();
 
-    if (to_find.find(current.edge_id) != to_find.end()) {
-      auto index = to_find[current.edge_id];
+    const auto edge = GetEdge(current.edge_id);
 
-      auto finish_edge = GetEdge(to[index].edge_id);
+    auto to_find_itr = to_find.find(current.edge_id);
+    if (to_find_itr != to_find.end()) {
+      auto index = to_find_itr->second;
+
       auto distance =
-          current.distance - finish_edge->length() * (1.0 - to[index].offset);
+          current.distance - edge->length() * (1.0 - to[index].offset);
 
       // this is needed to handle case when `from` and `to` are on the same
       // edge, but `to` is before `from` by offset
       if (distance >= 0.0) {
-        to_find.erase(current.edge_id);
+        to_find.erase(to_find_itr);
         results[index] = distance;
-        continue;
       }
     }
 
-    const auto edge = GetEdge(current.edge_id);
     auto target_node =
         GetTargetNode(current.edge_id.tile_id, edge->target_node_id());
     if (!target_node) {
       continue;
     }
 
-    auto adjacent_edge_ids = GetAdjacentEdges(*target_node);
-    for (const auto &adjacent_edge_id : adjacent_edge_ids) {
-      if (visited.find(adjacent_edge_id) != visited.end()) {
+    auto node = GetNode(*target_node);
+
+    // it shouldn't be null, because we already checked it above
+    assert(node); 
+
+    for (const auto edge_index: node->adjacent_edges()) {
+      EdgeId adjacent_edge_id{target_node->tile_id, edge_index};
+      
+      if (!visited.insert(adjacent_edge_id).second) {
         continue;
       }
-      visited.insert(adjacent_edge_id);
 
       auto edge = GetEdge(adjacent_edge_id);
-      if (!edge) {
-        continue;
-      }
+      assert(edge);
 
       auto distance = current.distance + edge->length();
       if (distance > options.max_distance_m) {
@@ -187,15 +194,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
 
 std::vector<Projection> Graph::Project(const Coordinate &coordinate,
                                        double radius_m) {
-  // TODO: make coverer class member
-  S2RegionCoverer::Options options;
-  options.set_fixed_level(graph::kTileLevel);
-  S2RegionCoverer coverer(options);
-
-  S2Cap cap(coordinate.AsS2LatLng().Normalized().ToPoint(),
-            S2Earth::MetersToChordAngle(radius_m));
-  std::vector<S2CellId> cells;
-  coverer.GetCovering(cap, &cells);
+  auto cells = coverer_.GetCovering(coordinate, radius_m);
 
   std::vector<Projection> results;
   for (const auto cellId : cells) {
@@ -225,27 +224,16 @@ std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
   if (node_index >= 0) {
     return {{tile_id, static_cast<uint32_t>(node_index)}};
   } else {
-    // TODO: -1 while encoding?
     auto tile = GetTile(tile_id);
     if (!tile) {
       return {};
     }
+    // indexes in `neighbour_tile_nodes` are encoded as negative values,
+    // 0 is used for usual nodes, so we start counting from -1 (that's why have this -1 here)
     const auto &neighbor_tile_node =
         tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
     return {{neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()}};
   }
-}
-
-std::vector<EdgeId> Graph::GetAdjacentEdges(const NodeId &node_id) {
-  auto node = GetNode(node_id);
-  if (!node) {
-    return {};
-  }
-  std::vector<EdgeId> results;
-  for (const auto edge_index : node->adjacent_edges()) {
-    results.push_back({node_id.tile_id, edge_index});
-  }
-  return results;
 }
 
 std::shared_ptr<Tile> Graph::GetTile(TileId tile_id) {

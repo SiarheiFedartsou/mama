@@ -51,8 +51,13 @@ jobs:
     - name: Build
       run: |
         sudo apt-get update -y && sudo apt-get install osmium-tool
-        cd demo
-        ./build.sh 
-        ./test.sh
+        cd demo && ./build.sh
+    - name: Test
+      run: |
+        cd demo && ./test.sh
+    - name: Benchmark
+      run: |
+        cd demo && npm install && ./benchmark.sh
+    
 
          

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include "base/coordinate.hpp"
+#include "coverer.hpp"
 
 namespace mama {
 
@@ -15,12 +16,21 @@ class Node;
 using TileId = uint64_t;
 
 struct EdgeId {
-  TileId tile_id;
+  TileId tile_id = 0;
   uint32_t edge_index = 0;
+
+  bool operator==(const EdgeId &other) const {
+    return tile_id == other.tile_id && edge_index == other.edge_index;
+  }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const EdgeId& e) {
+    return H::combine(std::move(h), e.tile_id, e.edge_index);
+  }
 };
 
 struct NodeId {
-  TileId tile_id;
+  TileId tile_id = 0;
   uint32_t node_index = 0;
 };
 
@@ -58,11 +68,12 @@ private:
 
   const tile::Node *GetNode(const NodeId &node_id);
   std::optional<NodeId> GetTargetNode(TileId tile_id, ssize_t node_index);
-  std::vector<EdgeId> GetAdjacentEdges(const NodeId &node_id);
 
   std::shared_ptr<Tile> GetTile(TileId tile_id);
 
 private:
+  Coverer coverer_;
+
   std::unordered_map<TileId, std::shared_ptr<Tile>> tiles_;
   std::string tiles_folder_;
 };

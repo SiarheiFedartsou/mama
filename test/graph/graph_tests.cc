@@ -35,10 +35,11 @@ TEST_CASE("Routing benchmark") {
     }
 
 
-    std::vector<double> result;
-    result.reserve(from.size() * to.size());
 
     meter.measure([&] { 
+      std::vector<double> result;
+      result.reserve(from.size() * to.size());
+
       for (const auto &from_point : from) {
         auto result = graph.PathDistance(from_point, to, {250});
         for (const auto &distance : result) {
@@ -48,6 +49,17 @@ TEST_CASE("Routing benchmark") {
       return result;
     });
   };
+}
+
+TEST_CASE("Projection benchmark") {
+  Graph graph(TilesFolder());
+
+  BENCHMARK_ADVANCED("Project")(Catch::Benchmark::Chronometer meter) {
+    meter.measure([&] { 
+      return graph.Project({7.41795, 43.73247}, 2500);
+    });
+  };
+
 }
 
 
@@ -63,9 +75,9 @@ TEST_CASE("Project properly finds projections on graph") {
     REQUIRE(projections.size() == 32);
 
     REQUIRE_THAT(projections[0].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.4929255958, 1e-3));
+                 Catch::Matchers::WithinAbs(0.499, 1e-3));
     REQUIRE_THAT(projections[1].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.9995924767, 1e-3));
+                 Catch::Matchers::WithinAbs(0.9855924767, 1e-3));
     REQUIRE_THAT(projections[0].distance_m,
                  Catch::Matchers::WithinAbs(3.596, 1e-3));
     REQUIRE_THAT(projections[1].distance_m,
@@ -87,9 +99,9 @@ TEST_CASE("Project properly finds projections on graph") {
       //REQUIRE(projections.size() == 2);
 
     REQUIRE_THAT(projections[0].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.7457049164, 1e-3));
+                 Catch::Matchers::WithinAbs(0.741, 1e-3));
     REQUIRE_THAT(projections[1].point_on_graph.offset,
-                 Catch::Matchers::WithinAbs(0.2530104689, 1e-3));
+                 Catch::Matchers::WithinAbs(0.251, 1e-3));
 
     REQUIRE(projections[0].distance_m == projections[1].distance_m);
     for (const auto &p : projections) {
@@ -120,7 +132,7 @@ TEST_CASE("PathDistance properly finds shortest path") {
 
     auto path = graph.PathDistance(from, {to}, {250});
     REQUIRE(path.size() == 1);
-    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(17.9997968104, 1e-3));
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(17.502, 1e-3));
   }
 
   // path to the start of the edge
@@ -132,7 +144,7 @@ TEST_CASE("PathDistance properly finds shortest path") {
     // TODO: this doesn't work if set limit to 250, why?
     auto path = graph.PathDistance(from, {to}, {300});
     REQUIRE(path.size() == 1);
-    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(225.6024032714, 1e-1));
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(224.502, 1e-1));
   }
 
   // path to the start of the edge (shouldn't exist due to max_distance_m)
