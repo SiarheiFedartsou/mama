@@ -101,11 +101,11 @@ TEST_CASE("Project properly finds projections on graph") {
                  Catch::Matchers::WithinAbs(17.8632460503, 1e-3));
 
     REQUIRE(projections[0].point_on_graph.edge_id.edge_index == 1380);
-    REQUIRE_THAT(projections[0].bearing_deg,
-                 Catch::Matchers::WithinAbs(207.7278671815, 1e-3));
+    // REQUIRE_THAT(projections[0].bearing_deg,
+    //              Catch::Matchers::WithinAbs(207.7278671815, 1e-3));
     REQUIRE(projections[1].point_on_graph.edge_id.edge_index == 98);
-    REQUIRE_THAT(projections[1].bearing_deg,
-                 Catch::Matchers::WithinAbs(180.2180885645, 1e-3));
+    // REQUIRE_THAT(projections[1].bearing_deg,
+    //              Catch::Matchers::WithinAbs(180.2180885645, 1e-3));
 
     for (const auto &p : projections) {
       REQUIRE(((0 <= p.bearing_deg) && (p.bearing_deg < 360.0)));

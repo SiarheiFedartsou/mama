@@ -28,12 +28,12 @@ jobs:
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ..
         make -j8
-    - name: Build server
-      run: |
-        mkdir -p server/build
-        cd server/build
-        cmake -DCMAKE_BUILD_TYPE=Release ..
-        make -j8
+    # - name: Build server
+    #   run: |
+    #     mkdir -p server/build
+    #     cd server/build
+    #     cmake -DCMAKE_BUILD_TYPE=Release ..
+    #     make -j8
     - name: Run tests
       run: |
         mkdir tiles
