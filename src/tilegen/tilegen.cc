@@ -392,7 +392,7 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
       }
     }
 
-    std::ofstream out(tiles_folder + "/" + std::to_string(tile_id) + ".tile2");
+    std::ofstream out(tiles_folder + "/" + std::to_string(tile_id) + ".tile");
     header.SerializeToOstream(&out);
   }
 }
