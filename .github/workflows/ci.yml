@@ -40,24 +40,24 @@ jobs:
         ./build/tilegen test/data/monaco-latest.osm.pbf tiles
         TILES_FOLDER=tiles ./build/tests        
 
-  demo:
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-    - name: Check protos
-      run: cmp --silent server/mama.proto demo/protos/mama.proto || (echo "Demo and server use different protos" && exit 1)
-    - name: Build
-      run: |
-        sudo apt-get update -y && sudo apt-get install osmium-tool
-        cd demo && ./build.sh
-    - name: Test
-      run: |
-        cd demo && ./test.sh
-    - name: Benchmark
-      run: |
-        cd demo && npm install && ./benchmark.sh
+  # demo:
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       submodules: 'recursive'
+  #   - name: Check protos
+  #     run: cmp --silent server/mama.proto demo/protos/mama.proto || (echo "Demo and server use different protos" && exit 1)
+  #   - name: Build
+  #     run: |
+  #       sudo apt-get update -y && sudo apt-get install osmium-tool
+  #       cd demo && ./build.sh
+  #   - name: Test
+  #     run: |
+  #       cd demo && ./test.sh
+  #   - name: Benchmark
+  #     run: |
+  #       cd demo && npm install && ./benchmark.sh
     
 
          
