@@ -16,7 +16,14 @@ find_package(Protobuf REQUIRED)
 # for generated headers
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS src/protos/tile.proto src/protos/state.proto)
 
-add_executable(tilegen src/tilegen/tilegen.cc  ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(
+    tilegen 
+    src/tilegen/tilegen.cc 
+    src/tilegen/osm_data_collector.hpp 
+    src/tilegen/osm_data_collector.cc  
+    ${PROTO_SRCS} 
+    ${PROTO_HDRS}
+)
 target_link_libraries(tilegen PRIVATE s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 target_include_directories(tilegen 
     PRIVATE 
