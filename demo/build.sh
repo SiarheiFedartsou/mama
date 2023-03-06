@@ -14,7 +14,7 @@ popd
 docker build -t mama-server -f ../server/Dockerfile .. 
 
 # generate tiles
-docker run -v $(pwd)/tiles:/tiles -t mama-server tilegen /tiles/warsaw.osm.pbf /tiles
+docker run -v $(pwd)/tiles:/tiles -t mama-server tilegen /tiles/warsaw.osm.pbf /tiles --max_precompute_path_length 250
 
 # build demo
 docker compose build

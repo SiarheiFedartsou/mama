@@ -1,4 +1,5 @@
 #include <cinttypes>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 
@@ -6,6 +7,7 @@
 #include "base/log.hpp"
 #include "graph/tile_level.hpp"
 
+#include "options.hpp"
 #include "s2/mutable_s2shape_index.h"
 #include "s2/s1chord_angle.h"
 #include "s2/s2closest_point_query.h"
@@ -24,6 +26,7 @@
 #include <osmium/util/progress_bar.hpp>
 #include <osmium/visitor.hpp>
 #include <stdexcept>
+#include "options.hpp"
 
 namespace mama {
 namespace tilegen {
@@ -316,7 +319,7 @@ private:
   mama::tile::Header header;
 };
 
-void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& tiles_folder) {
+void BuildDistanceTables(const std::vector<TileId> tile_ids, const Options &cli_options) {
   struct EdgeInfo {
     size_t edge_index = 0;
     uint32_t distance = 0;
@@ -331,11 +334,9 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
     uint32_t distance = 0;
   };
 
-  constexpr uint32_t kMaxDistance = 250;
-
   for (auto tile_id : tile_ids) {
    // int r = 0;
-    std::ifstream tile_ifs(tiles_folder + "/" + std::to_string(tile_id) + ".tile");
+    std::ifstream tile_ifs(cli_options.output_folder + "/" + std::to_string(tile_id) + ".tile");
     mama::tile::Header header;
     header.ParseFromIstream(&tile_ifs);
 
@@ -374,7 +375,7 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
 
           distance_table.push_back(DistanceTableEntry{adjacent_edge_index, current.distance});
           auto new_distance = current.distance + length;
-          if (new_distance > kMaxDistance) {
+          if (new_distance > *cli_options.max_precompute_path_length) {
             continue;
           }
           queue.push(EdgeInfo{adjacent_edge_index, new_distance});
@@ -392,7 +393,7 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
       }
     }
 
-    std::ofstream out(tiles_folder + "/" + std::to_string(tile_id) + ".tile");
+    std::ofstream out(cli_options.output_folder + "/" + std::to_string(tile_id) + ".tile");
     header.SerializeToOstream(&out);
   }
 }
@@ -401,18 +402,15 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const std::string& 
 } // namespace mama
 
 int main(int argc, char **argv) {
+  using namespace mama::tilegen;
+
+  Options cli_options = Options::Parse(argc, argv);
+
   mama::base::InitializeLogging();
 
-  using namespace mama::tilegen;
-  if (argc != 3) {
-    std::cerr << "Usage: " << argv[0] << " OSMFILE OUTPUTFOLDER\n";
-    return 1;
-  }
-
-  std::string output_folder = argv[2];
 
   try {
-    osmium::io::Reader reader{argv[1], osmium::osm_entity_bits::node |
+    osmium::io::Reader reader{cli_options.osm_file, osmium::osm_entity_bits::node |
                                            osmium::osm_entity_bits::way};
     osmium::ProgressBar progress{reader.file_size(), osmium::isatty(2)};
 
@@ -446,7 +444,7 @@ int main(int argc, char **argv) {
     }
 
     for (auto &[tile_id, tile_builder] : tile_builders) {
-      tile_builder.finish(tile_builders, output_folder);
+      tile_builder.finish(tile_builders, cli_options.output_folder);
     }
 
     std::vector<TileId> tile_ids;
@@ -455,7 +453,9 @@ int main(int argc, char **argv) {
       tile_ids.push_back(tile_id);
     }
 
-    BuildDistanceTables(tile_ids, output_folder);
+    if (cli_options.max_precompute_path_length) {
+      BuildDistanceTables(tile_ids, cli_options);
+    }
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';
     return 1;

@@ -16,7 +16,7 @@ find_package(Protobuf REQUIRED)
 # for generated headers
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS src/protos/tile.proto src/protos/state.proto)
 
-add_executable(tilegen src/tilegen/tilegen.cc  ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(tilegen src/tilegen/tilegen.cc src/tilegen/options.hpp src/tilegen/options.cc  ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(tilegen PRIVATE s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
 target_include_directories(tilegen 
     PRIVATE 
@@ -40,7 +40,6 @@ target_include_directories(
         ${CMAKE_CURRENT_BINARY_DIR} 
         ${Protobuf_INCLUDE_DIRS} 
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/spdlog/include
-
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include
 )
