@@ -97,17 +97,20 @@ public:
 
   const auto &header() const { return header_; }
 
-  double shortest_path(const tile::Edge& from_edge, size_t to_edge_index) {
-//    return 0;
-    assert(from_edge.has_distance_table());
+  bool shortest_path(const tile::Edge& from_edge, size_t to_edge_index, double* distance) {
+    assert(distance);
+    if (!from_edge.has_distance_table()) {
+      return false;
+    }
+
     const auto& distance_table = from_edge.distance_table();
     auto itr = std::lower_bound(distance_table.edge_id().begin(), distance_table.edge_id().end(), to_edge_index);
     if (itr == distance_table.edge_id().end() || *itr != to_edge_index) {
       return std::numeric_limits<double>::max();
     }
-    return static_cast<double>(distance_table.distance(std::distance(distance_table.edge_id().begin(), itr)));
+    *distance = static_cast<double>(distance_table.distance(std::distance(distance_table.edge_id().begin(), itr)));
+    return true;
   }
-
 private:
   TileId tile_id_;
   tile::Header header_;
@@ -142,21 +145,21 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   for (size_t index = 0; index < to.size(); ++index) {
      if (to[index].edge_id.tile_id == from.edge_id.tile_id) {
       if (to[index].edge_id.edge_index == from.edge_id.edge_index && to[index].offset >= from.offset) {
-        //std::cerr << "b\n";
         auto edge = from_tile->edges(to[index].edge_id.edge_index);
         results[index] = edge.length() * (to[index].offset - from.offset);
       } else {
-    //     std::cerr << "a\n";
-        results[index] = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index), to[index].edge_id.edge_index);
-
-        const auto& begin_edge = from_tile->edges(from.edge_id.edge_index);
-        const auto& end_edge = from_tile->edges(to[index].edge_id.edge_index);
-//        (void)begin_edge;
-       // (void)end_edge;
-        if (results[index] != std::numeric_limits<double>::max()) {
-          results[index] += begin_edge.length() * (1.0 - from.offset);
-          results[index] += end_edge.length() * to[index].offset;
+        bool has_distance_table = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index), to[index].edge_id.edge_index, &results[index]);
+        if (has_distance_table) {
+          const auto& begin_edge = from_tile->edges(from.edge_id.edge_index);
+          const auto& end_edge = from_tile->edges(to[index].edge_id.edge_index);
+          if (results[index] != std::numeric_limits<double>::max()) {
+            results[index] += begin_edge.length() * (1.0 - from.offset);
+            results[index] += end_edge.length() * to[index].offset;
+          }
+        } else {
+          to_find[to[index].edge_id] = index;
         }
+
        }
 
     } else {
@@ -164,7 +167,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     }
   }
 
-  if (to_find.empty()) {//std::cerr << "b\n";
+  if (to_find.empty()) {
     return results;
   }
 
@@ -173,9 +176,6 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   if (!init_edge) {
     return results;
   }
-  // for (size_t index = 0; index < to.size(); ++index) {
-  //   to_find[to[index].edge_id] = index;
-  // }
 
   absl::flat_hash_set<EdgeId> visited;
   std::priority_queue<Distance> queue;
