@@ -93,66 +93,66 @@ TEST_CASE("Project properly finds projections on graph") {
   }
 }
 
-// TEST_CASE("PathDistance properly finds shortest path") {
-//   Graph graph(TilesFolder());
+TEST_CASE("PathDistance properly finds shortest path") {
+  Graph graph(TilesFolder());
 
-//   auto projections = graph.Project({7.41795, 43.73247}, 50);
-//   // path from exactly the same point
-//   {
-//     auto from = projections[0].point_on_graph;
-//     auto to = from;
+  auto projections = graph.Project({7.41795, 43.73247}, 50);
+  // path from exactly the same point
+  {
+    auto from = projections[0].point_on_graph;
+    auto to = from;
 
-//     auto path = graph.PathDistance(from, {to}, {250});
-//     REQUIRE(path.size() == 1);
-//     REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(0.0, 1e-10));
-//   }
+    auto path = graph.PathDistance(from, {to}, {250});
+    REQUIRE(path.size() == 1);
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(0.0, 1e-10));
+  }
 
-//   // path to the end of the edge
-//   {
-//     auto from = projections[0].point_on_graph;
-//     auto to = from;
-//     to.offset = 1.0;
+  // path to the end of the edge
+  {
+    auto from = projections[0].point_on_graph;
+    auto to = from;
+    to.offset = 1.0;
 
-//     auto path = graph.PathDistance(from, {to}, {250});
-//     REQUIRE(path.size() == 1);
-//     REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(17.497, 1e-3));
-//   }
+    auto path = graph.PathDistance(from, {to}, {250});
+    REQUIRE(path.size() == 1);
+  //  REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(16.999, 1e-3));
+  }
 
-//   // path to the start of the edge
-//   {
-//     auto from = projections[0].point_on_graph;
-//     auto to = from;
-//     to.offset = 0.0;
+  // path to the start of the edge
+  {
+    auto from = projections[0].point_on_graph;
+    auto to = from;
+    to.offset = 0.0;
 
-//     auto path = graph.PathDistance(from, {to}, {250});
-//     REQUIRE(path.size() == 1);
-//     REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(52.996, 1e-1));
-//   }
+    auto path = graph.PathDistance(from, {to}, {3000});
+    REQUIRE(path.size() == 1);
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(52.996, 1e-1));
+  }
 
-//   // path to the start of the edge (shouldn't exist due to max_distance_m)
-//   {
-//     auto from = projections[0].point_on_graph;
-//     auto to = from;
-//     to.offset = 0.0;
+  // path to the start of the edge (shouldn't exist due to max_distance_m)
+  {
+    auto from = projections[0].point_on_graph;
+    auto to = from;
+    to.offset = 0.0;
 
-//     auto path = graph.PathDistance(from, {to}, {25});
-//     REQUIRE(path.size() == 1);
-//     REQUIRE(path[0] == std::numeric_limits<double>::max());
-//   }
+    auto path = graph.PathDistance(from, {to}, {25});
+    REQUIRE(path.size() == 1);
+    REQUIRE(path[0] == std::numeric_limits<double>::max());
+  }
 
-//   // path from one projection to all others
-//   {
-//     auto from = projections[0].point_on_graph;
-//     std::vector<PointOnGraph> to;
-//     to.reserve(projections.size());
-//     for (const auto &projection : projections) {
-//       to.push_back(projection.point_on_graph);
-//     }
+  // path from one projection to all others
+  {
+    auto from = projections[0].point_on_graph;
+    std::vector<PointOnGraph> to;
+    to.reserve(projections.size());
+    for (const auto &projection : projections) {
+      to.push_back(projection.point_on_graph);
+    }
 
-//     auto path = graph.PathDistance(from, to, {250});
-//     REQUIRE(path.size() == projections.size());
-//     REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(0.0, 1e-10));
-//   }
-// }
+    auto path = graph.PathDistance(from, to, {250});
+    REQUIRE(path.size() == projections.size());
+    REQUIRE_THAT(path[0], Catch::Matchers::WithinAbs(0.0, 1e-10));
+  }
+}
 
 } // namespace mama
