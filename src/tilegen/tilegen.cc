@@ -291,12 +291,7 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const Options &cli_
     mama::tile::Header header;
     header.ParseFromIstream(&tile_ifs);
 
-    // TODO: do we really need to store distances to adjacent edges - it can be encoded as zero
-
-    std::cerr << "before = " << header.ByteSizeLong() << "\n";
     for (size_t edge_index = 0; edge_index < header.edges_size(); ++edge_index) {
-
-
       std::vector<DistanceTableEntry> distance_table;
 
       std::priority_queue<EdgeInfo> queue;
@@ -308,21 +303,19 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const Options &cli_
         auto current = queue.top();
         queue.pop();
 
-        if (visited_edges.find(current.edge_index) != visited_edges.end()) {
-          continue;
-        }
-        visited_edges.insert(current.edge_index);
-
-
-
         auto target_node_id = header.edges(current.edge_index).target_node_id();
+        // TODO: what if shortest path goes through another tile?
         // TODO: it means it is in another tile, but we need a way to also precompute distances to edges in other tiles
         if (target_node_id < 0) {
           continue;
         }
         auto target_node = header.nodes(target_node_id);
         for (auto adjacent_edge_index: target_node.adjacent_edges()) {
-          uint32_t length = static_cast<uint32_t>(header.edges(edge_index).length());
+          if (!visited_edges.insert(adjacent_edge_index).second) {
+            continue;
+          }
+
+          uint32_t length = static_cast<uint32_t>(header.edges(adjacent_edge_index).length());
 
           distance_table.push_back(DistanceTableEntry{adjacent_edge_index, current.distance});
           auto new_distance = current.distance + length;

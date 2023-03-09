@@ -156,12 +156,18 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
             results[index] += begin_edge.length() * (1.0 - from.offset);
             results[index] += end_edge.length() * to[index].offset;
           }
+
+          // TODO: do we really care about this?
+          if (results[index] > options.max_distance_m) {
+            results[index] = std::numeric_limits<double>::max();
+          }
+
         } else {
           to_find[to[index].edge_id] = index;
         }
 
        }
-
+      // to_find[to[index].edge_id] = index;
     } else {
       to_find[to[index].edge_id] = index;
     }
@@ -186,7 +192,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     queue.pop();
 
     const auto edge = GetEdge(current.edge_id);
-
+    
     auto to_find_itr = to_find.find(current.edge_id);
     if (to_find_itr != to_find.end()) {
       auto index = to_find_itr->second;
@@ -200,6 +206,9 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       if (distance >= 0.0) {
         to_find.erase(to_find_itr);
         results[index] = distance;
+        if (to_find.empty()) {
+          break;
+        }
       }
     }
 
