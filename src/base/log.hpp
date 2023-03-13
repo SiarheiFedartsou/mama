@@ -12,6 +12,8 @@
 
 namespace mama {
 namespace base {
-inline void InitializeLogging() { spdlog::cfg::load_env_levels(); }
-} // namespace base
-} // namespace mama
+inline void InitializeLogging() {
+  spdlog::cfg::load_env_levels();
+}
+}  // namespace base
+}  // namespace mama

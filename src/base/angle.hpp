@@ -15,7 +15,7 @@ inline double NormalizeAngle(double angle) {
 inline double AngleDiff(double angle1, double angle2) {
   // normalize angles
   angle1 = NormalizeAngle(angle1);
-    angle2 = NormalizeAngle(angle2);
+  angle2 = NormalizeAngle(angle2);
   double diff = angle1 - angle2;
   if (diff > 180.0) {
     diff -= 360.0;
@@ -25,4 +25,4 @@ inline double AngleDiff(double angle1, double angle2) {
   return std::abs(diff);
 }
 
-} // namespace mama
+}  // namespace mama

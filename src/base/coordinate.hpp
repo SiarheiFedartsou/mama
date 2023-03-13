@@ -15,7 +15,7 @@ struct Coordinate {
 
   double lat() const { return y; }
 
-  static Coordinate FromS2LatLng(const S2LatLng &latlng) {
+  static Coordinate FromS2LatLng(const S2LatLng& latlng) {
     const auto& normalized = latlng.Normalized();
     return Coordinate{normalized.lng().degrees(), normalized.lat().degrees()};
   }
@@ -23,7 +23,7 @@ struct Coordinate {
   S2LatLng AsS2LatLng() const { return S2LatLng::FromDegrees(y, x); }
 
   // returns distance to `coordinate` in meters
-  double Distance(const Coordinate &coordinate) const {
+  double Distance(const Coordinate& coordinate) const {
     // TODO: we can cache rulers by latitude and reuse them
     mapbox::cheap_ruler::CheapRuler ruler{lat(), mapbox::cheap_ruler::CheapRuler::Meters};
 
@@ -31,7 +31,7 @@ struct Coordinate {
   }
 
   // returns bearing in direction of `coordinate` in degrees
-  double BearingTo(const Coordinate &coordinate) const {
+  double BearingTo(const Coordinate& coordinate) const {
     mapbox::cheap_ruler::CheapRuler ruler{lat(), mapbox::cheap_ruler::CheapRuler::Meters};
 
     auto bearing = ruler.bearing({x, y}, {coordinate.x, coordinate.y});
@@ -43,4 +43,4 @@ struct Coordinate {
   }
 };
 
-} // namespace mama
+}  // namespace mama

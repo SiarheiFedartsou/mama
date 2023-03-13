@@ -12,9 +12,8 @@
 namespace mama {
 namespace server {
 class ServerImpl final {
-public:
-  explicit ServerImpl(const std::string &tiles_folder)
-      : graph_(std::make_shared<Graph>(tiles_folder)) {}
+ public:
+  explicit ServerImpl(const std::string& tiles_folder) : graph_(std::make_shared<Graph>(tiles_folder)) {}
 
   ~ServerImpl() {
     server_->Shutdown();
@@ -34,14 +33,11 @@ public:
     HandleRpcs();
   }
 
-private:
+ private:
   class CallData {
-  public:
-    CallData(std::shared_ptr<Graph> graph,
-             api::MamaService::AsyncService *service,
-             grpc::ServerCompletionQueue *cq)
-        : graph_(std::move(graph)), service_(service), cq_(cq),
-          responder_(&ctx_), status_(CREATE) {
+   public:
+    CallData(std::shared_ptr<Graph> graph, api::MamaService::AsyncService* service, grpc::ServerCompletionQueue* cq)
+        : graph_(std::move(graph)), service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
       Proceed();
     }
 
@@ -53,17 +49,16 @@ private:
       } else if (status_ == PROCESS) {
         new CallData(graph_, service_, cq_);
 
-        MAMA_INFO("Received request with {} entries for ID = {}", request_.entries_size(), reinterpret_cast<void*>(this));
+        MAMA_INFO("Received request with {} entries for ID = {}", request_.entries_size(),
+                  reinterpret_cast<void*>(this));
         MapMatchingController map_matcher{graph_};
-        for (const auto &entry : request_.entries()) {
+        for (const auto& entry : request_.entries()) {
           std::string entry_state = entry.state();
 
-          auto map_matched_location = map_matcher.Update(
-              ConvertProtoToLocation(entry.location()), entry_state);
+          auto map_matched_location = map_matcher.Update(ConvertProtoToLocation(entry.location()), entry_state);
 
           auto reply_entry = reply_.add_entries();
-          *reply_entry->mutable_location() =
-              ConvertLocationToProto<api::Location>(map_matched_location);
+          *reply_entry->mutable_location() = ConvertLocationToProto<api::Location>(map_matched_location);
 
           reply_entry->set_state(entry_state);
         }
@@ -78,10 +73,10 @@ private:
       }
     }
 
-  private:
+   private:
     std::shared_ptr<Graph> graph_;
-    api::MamaService::AsyncService *service_;
-    grpc::ServerCompletionQueue *cq_;
+    api::MamaService::AsyncService* service_;
+    grpc::ServerCompletionQueue* cq_;
     grpc::ServerContext ctx_;
 
     api::MapMatchingRequest request_;
@@ -95,12 +90,12 @@ private:
 
   void HandleRpcs() {
     new CallData(graph_, &service_, cq_.get());
-    void *tag;
+    void* tag;
     bool ok;
     while (true) {
       GPR_ASSERT(cq_->Next(&tag, &ok));
       GPR_ASSERT(ok);
-      static_cast<CallData *>(tag)->Proceed();
+      static_cast<CallData*>(tag)->Proceed();
     }
   }
 
@@ -110,10 +105,10 @@ private:
   std::unique_ptr<grpc::Server> server_;
 };
 
-} // namespace server
-} // namespace mama
+}  // namespace server
+}  // namespace mama
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   mama::base::InitializeLogging();
 
   if (argc != 2) {

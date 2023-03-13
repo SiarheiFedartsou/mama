@@ -1,8 +1,8 @@
 #pragma once
 
+#include <optional>
 #include "base/coordinate.hpp"
 #include "graph/graph.hpp"
-#include <optional>
 namespace mama {
 
 namespace state {
@@ -16,28 +16,22 @@ struct Timestamp {
   double ToSeconds() const { return seconds + nanos * 1e-9; }
 
   // TODO: can we clean it up
-  bool operator==(const Timestamp &other) const {
-    return seconds == other.seconds && nanos == other.nanos;
+  bool operator==(const Timestamp& other) const { return seconds == other.seconds && nanos == other.nanos; }
+
+  bool operator<(const Timestamp& other) const {
+    return seconds < other.seconds || (seconds == other.seconds && nanos < other.nanos);
   }
 
-  bool operator<(const Timestamp &other) const {
-    return seconds < other.seconds ||
-           (seconds == other.seconds && nanos < other.nanos);
+  bool operator>(const Timestamp& other) const {
+    return seconds > other.seconds || (seconds == other.seconds && nanos > other.nanos);
   }
 
-  bool operator>(const Timestamp &other) const {
-    return seconds > other.seconds ||
-           (seconds == other.seconds && nanos > other.nanos);
+  bool operator<=(const Timestamp& other) const {
+    return seconds < other.seconds || (seconds == other.seconds && nanos <= other.nanos);
   }
 
-  bool operator<=(const Timestamp &other) const {
-    return seconds < other.seconds ||
-           (seconds == other.seconds && nanos <= other.nanos);
-  }
-
-  bool operator>=(const Timestamp &other) const {
-    return seconds > other.seconds ||
-           (seconds == other.seconds && nanos >= other.nanos);
+  bool operator>=(const Timestamp& other) const {
+    return seconds > other.seconds || (seconds == other.seconds && nanos >= other.nanos);
   }
 };
 
@@ -49,7 +43,8 @@ struct Location {
   std::optional<double> horizontal_accuracy = {};
 };
 
-template <typename T> T ConvertLocationToProto(const Location &location) {
+template <typename T>
+T ConvertLocationToProto(const Location& location) {
   T location_proto;
   location_proto.mutable_timestamp()->set_seconds(location.timestamp.seconds);
   location_proto.mutable_timestamp()->set_nanos(location.timestamp.nanos);
@@ -64,34 +59,33 @@ template <typename T> T ConvertLocationToProto(const Location &location) {
   return location_proto;
 }
 
-template <typename T> Location ConvertProtoToLocation(const T &location_proto) {
+template <typename T>
+Location ConvertProtoToLocation(const T& location_proto) {
   Location location;
   location.timestamp.seconds = location_proto.timestamp().seconds();
   location.timestamp.nanos = location_proto.timestamp().nanos();
   location.coordinate = {location_proto.longitude(), location_proto.latitude()};
   if (location_proto.has_bearing()) {
     location.bearing = location_proto.bearing().value();
-  } 
+  }
   if (location_proto.has_speed()) {
     location.speed = location_proto.speed().value();
   }
   return location;
 }
 
-
-
 class MapMatcher {
-public:
+ public:
   explicit MapMatcher(std::shared_ptr<Graph> graph);
 
-  Location Update(const Location &location);
+  Location Update(const Location& location);
   std::shared_ptr<Graph> graph_;
 
-  void RestoreState(const state::State &state);
-  void SaveState(state::State &state);
-private:
-  Location BuildResult(const Location &location,
-                       const std::vector<Projection> &candidates);
+  void RestoreState(const state::State& state);
+  void SaveState(state::State& state);
+
+ private:
+  Location BuildResult(const Location& location, const std::vector<Projection>& candidates);
 
   struct HMMState {
     PointOnGraph point_on_graph;
@@ -102,24 +96,24 @@ private:
 };
 
 class MapMatchingController {
-public:
+ public:
   explicit MapMatchingController(std::shared_ptr<Graph> graph) : map_matcher_(std::make_unique<MapMatcher>(graph)) {}
 
-
   // the same as `state::State` overload, but automatically serializes the state
-  Location Update(const Location &location, std::string &state);
-  Location Update(Location location, state::State &state);
-  
-  Location Update(Location location);
-private:
-  void RestoreState(const state::State &state);
-  void SaveState(state::State &state);
-private:
-  std::unique_ptr<MapMatcher> map_matcher_;
+  Location Update(const Location& location, std::string& state);
+  Location Update(Location location, state::State& state);
 
+  Location Update(Location location);
+
+ private:
+  void RestoreState(const state::State& state);
+  void SaveState(state::State& state);
+
+ private:
+  std::unique_ptr<MapMatcher> map_matcher_;
 
   std::optional<Location> previous_location_;
   std::optional<Location> previous_matched_location_;
 };
 
-} // namespace mama
+}  // namespace mama

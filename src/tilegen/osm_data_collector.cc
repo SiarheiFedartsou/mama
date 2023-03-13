@@ -8,13 +8,11 @@
 namespace mama {
 namespace tilegen {
 
-void OSMDataCollector::CollectFrom(const std::string &filename) {
-  osmium::io::Reader reader{filename, osmium::osm_entity_bits::node |
-                                          osmium::osm_entity_bits::way};
+void OSMDataCollector::CollectFrom(const std::string& filename) {
+  osmium::io::Reader reader{filename, osmium::osm_entity_bits::node | osmium::osm_entity_bits::way};
   osmium::ProgressBar progress{reader.file_size(), osmium::isatty(2)};
 
-  using Index = osmium::index::map::FlexMem<osmium::unsigned_object_id_type,
-                                            osmium::Location>;
+  using Index = osmium::index::map::FlexMem<osmium::unsigned_object_id_type, osmium::Location>;
   using LocationHandler = osmium::handler::NodeLocationsForWays<Index>;
 
   Index index;
@@ -28,26 +26,23 @@ void OSMDataCollector::CollectFrom(const std::string &filename) {
   progress.done();
 }
 
-void OSMDataCollector::way(const osmium::Way &way) {
+void OSMDataCollector::way(const osmium::Way& way) {
   if (!isWayAccessibleByAuto(way)) {
     return;
   }
 
   OSMWay internal_way;
-  for (const auto &node : way.nodes()) {
+  for (const auto& node : way.nodes()) {
     ++intersections[node.ref()];
-    internal_way.nodes.push_back(
-        {static_cast<ObjectID>(node.ref()),
-         {node.location().lon(), node.location().lat()}});
+    internal_way.nodes.push_back({static_cast<ObjectID>(node.ref()), {node.location().lon(), node.location().lat()}});
   }
   internal_way.oneway_direction = getOnewayDirection(way);
 
   ways.emplace_back(std::move(internal_way));
 }
 
-OnewayDirection
-OSMDataCollector::getOnewayDirection(const osmium::Way &way) const {
-  const char *oneway = way.tags()["oneway"];
+OnewayDirection OSMDataCollector::getOnewayDirection(const osmium::Way& way) const {
+  const char* oneway = way.tags()["oneway"];
   if (oneway == nullptr) {
     return OnewayDirection::None;
   }
@@ -60,18 +55,17 @@ OSMDataCollector::getOnewayDirection(const osmium::Way &way) const {
   return OnewayDirection::None;
 }
 
-bool OSMDataCollector::isWayAccessibleByAuto(const osmium::Way &way) const {
+bool OSMDataCollector::isWayAccessibleByAuto(const osmium::Way& way) const {
   static std::unordered_set<std::string> kAccessibleTags = {
-      "motorway",      "trunk",         "primary",      "secondary",
-      "tertiary",      "unclassified",  "residential",  "service",
-      "motorway_link", "trunk_link",    "primary_link", "secondary_link",
-      "tertiary_link", "living_street", "road"};
-  const char *highway = way.tags()["highway"];
+      "motorway",     "trunk",          "primary",       "secondary",     "tertiary",
+      "unclassified", "residential",    "service",       "motorway_link", "trunk_link",
+      "primary_link", "secondary_link", "tertiary_link", "living_street", "road"};
+  const char* highway = way.tags()["highway"];
   if (highway == nullptr) {
     return false;
   }
   return kAccessibleTags.contains(highway);
 }
 
-} // namespace tilegen
-} // namespace mama
+}  // namespace tilegen
+}  // namespace mama
