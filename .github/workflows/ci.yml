@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Check format
       run: |
-        sudo apt-get update -y && sudo apt-get -y install clang-format-15.0
+        sudo apt-get update -y && sudo apt-get -y install clang-format-15
         ./scripts/format.sh
   build:
     needs: format
