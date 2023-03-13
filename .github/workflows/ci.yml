@@ -10,10 +10,10 @@ jobs:
   format:
     runs-on: ubuntu-22.04
   steps:
-    - uses: actions/checkout@v3
-    - name: Check format
-      run: |
-        ./scripts/format.sh
+  - uses: actions/checkout@v3
+  - name: Check format
+    run: |
+      ./scripts/format.sh
   build:
     runs-on: ubuntu-22.04
     env: 
