@@ -1,4 +1,5 @@
 #include <cinttypes>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 
@@ -7,6 +8,7 @@
 #include "graph/tile_level.hpp"
 #include "osm_data_collector.hpp"
 
+#include "options.hpp"
 #include "s2/mutable_s2shape_index.h"
 #include "s2/s1chord_angle.h"
 #include "s2/s2closest_point_query.h"
@@ -19,6 +21,7 @@
 #include <fstream>
 #include <iomanip>
 #include <stdexcept>
+#include "options.hpp"
 
 namespace mama {
 namespace tilegen {
@@ -266,23 +269,92 @@ private:
 
   mama::tile::Header header;
 };
+
+void BuildDistanceTables(const std::vector<TileId> tile_ids, const Options &cli_options) {
+  struct EdgeInfo {
+    size_t edge_index = 0;
+    uint32_t distance = 0;
+
+    bool operator<(const EdgeInfo &rhs) const {
+      return distance > rhs.distance;
+    }
+  };
+
+  struct DistanceTableEntry {
+    uint32_t edge_index = 0;
+    uint32_t distance = 0;
+  };
+
+  for (auto tile_id : tile_ids) {
+    std::ifstream tile_ifs(cli_options.output_folder + "/" + std::to_string(tile_id) + ".tile");
+    mama::tile::Header header;
+    header.ParseFromIstream(&tile_ifs);
+
+    for (size_t edge_index = 0; edge_index < header.edges_size(); ++edge_index) {
+      std::vector<DistanceTableEntry> distance_table;
+
+      std::priority_queue<EdgeInfo> queue;
+      std::unordered_set<size_t> visited_edges;
+
+      queue.push(EdgeInfo{edge_index, 0});
+
+      while (!queue.empty()) {
+        auto current = queue.top();
+        queue.pop();
+
+        auto target_node_id = header.edges(current.edge_index).target_node_id();
+        // TODO: what if shortest path goes through another tile?
+        // TODO: it means it is in another tile, but we need a way to also precompute distances to edges in other tiles
+        if (target_node_id < 0) {
+          continue;
+        }
+        auto target_node = header.nodes(target_node_id);
+        for (auto adjacent_edge_index: target_node.adjacent_edges()) {
+          if (!visited_edges.insert(adjacent_edge_index).second) {
+            continue;
+          }
+
+          uint32_t length = static_cast<uint32_t>(header.edges(adjacent_edge_index).length());
+
+          distance_table.push_back(DistanceTableEntry{adjacent_edge_index, current.distance});
+          auto new_distance = current.distance + length;
+          if (new_distance > *cli_options.max_precompute_path_length) {
+            continue;
+          }
+          queue.push(EdgeInfo{adjacent_edge_index, new_distance});
+        }
+      }
+
+      std::sort(distance_table.begin(), distance_table.end(), [](const DistanceTableEntry& a, const DistanceTableEntry& b) {
+        return a.edge_index < b.edge_index;
+      });
+
+      auto& pbf_distance_table = *header.mutable_edges(edge_index)->mutable_distance_table();
+      for (auto& entry : distance_table) {
+        pbf_distance_table.add_edge_id(entry.edge_index);
+        pbf_distance_table.add_distance(entry.distance);
+      }
+    }
+
+    std::ofstream out(cli_options.output_folder + "/" + std::to_string(tile_id) + ".tile");
+    header.SerializeToOstream(&out);
+  }
+}
+
 } // namespace tilegen
 } // namespace mama
 
 int main(int argc, char **argv) {
+  using namespace mama::tilegen;
+
+  Options cli_options = Options::Parse(argc, argv);
+
   mama::base::InitializeLogging();
 
-  using namespace mama::tilegen;
-  if (argc != 3) {
-    std::cerr << "Usage: " << argv[0] << " OSMFILE OUTPUTFOLDER\n";
-    return 1;
-  }
-
-  std::string output_folder = argv[2];
 
   try {
     OSMDataCollector data_collector;
-    data_collector.CollectFrom(argv[1]);
+    data_collector.CollectFrom(cli_options.osm_file);
 
     GraphBuilder builder;
     builder.build(data_collector);
@@ -298,9 +370,18 @@ int main(int argc, char **argv) {
     }
 
     for (auto &[tile_id, tile_builder] : tile_builders) {
-      tile_builder.finish(tile_builders, output_folder);
+      tile_builder.finish(tile_builders, cli_options.output_folder);
     }
 
+    std::vector<TileId> tile_ids;
+    tile_ids.reserve(tile_builders.size());
+    for (const auto &[tile_id, _] : tile_builders) {
+      tile_ids.push_back(tile_id);
+    }
+
+    if (cli_options.max_precompute_path_length) {
+      BuildDistanceTables(tile_ids, cli_options);
+    }
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';
     return 1;

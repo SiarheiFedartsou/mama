@@ -97,6 +97,20 @@ public:
 
   const auto &header() const { return header_; }
 
+  bool shortest_path(const tile::Edge& from_edge, size_t to_edge_index, double* distance) {
+    assert(distance);
+    if (!from_edge.has_distance_table()) {
+      return false;
+    }
+
+    const auto& distance_table = from_edge.distance_table();
+    auto itr = std::lower_bound(distance_table.edge_id().begin(), distance_table.edge_id().end(), to_edge_index);
+    if (itr == distance_table.edge_id().end() || *itr != to_edge_index) {
+      return std::numeric_limits<double>::max();
+    }
+    *distance = static_cast<double>(distance_table.distance(std::distance(distance_table.edge_id().begin(), itr)));
+    return true;
+  }
 private:
   TileId tile_id_;
   tile::Header header_;
@@ -119,20 +133,52 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     }
   };
 
+  auto from_tile = GetTile(from.edge_id.tile_id);
+
+
   std::vector<double> results;
   results.resize(to.size(), std::numeric_limits<double>::max());
 
+
+  absl::flat_hash_map<EdgeId, size_t> to_find;
+  to_find.reserve(to.size());
+  for (size_t index = 0; index < to.size(); ++index) {
+     if (to[index].edge_id.tile_id == from.edge_id.tile_id) {
+      if (to[index].edge_id.edge_index == from.edge_id.edge_index && to[index].offset >= from.offset) {
+        auto edge = from_tile->edges(to[index].edge_id.edge_index);
+        results[index] = edge.length() * (to[index].offset - from.offset);
+      } else {
+        bool has_distance_table = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index), to[index].edge_id.edge_index, &results[index]);
+        if (has_distance_table) {
+          const auto& begin_edge = from_tile->edges(from.edge_id.edge_index);
+          const auto& end_edge = from_tile->edges(to[index].edge_id.edge_index);
+          if (results[index] != std::numeric_limits<double>::max()) {
+            results[index] += begin_edge.length() * (1.0 - from.offset);
+            results[index] += end_edge.length() * to[index].offset;
+          }
+
+          // TODO: do we really care about this?
+          if (results[index] > options.max_distance_m) {
+            results[index] = std::numeric_limits<double>::max();
+          }
+
+        } else {
+          to_find[to[index].edge_id] = index;
+        }
+       }
+    } else {
+      to_find[to[index].edge_id] = index;
+    }
+  }
+
+  if (to_find.empty()) {
+    return results;
+  }
 
 
   auto init_edge = GetEdge(from.edge_id);
   if (!init_edge) {
     return results;
-  }
-
-  absl::flat_hash_map<EdgeId, size_t> to_find;
-  to_find.reserve(to.size());
-  for (size_t index = 0; index < to.size(); ++index) {
-    to_find[to[index].edge_id] = index;
   }
 
   absl::flat_hash_set<EdgeId> visited;
@@ -144,7 +190,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     queue.pop();
 
     const auto edge = GetEdge(current.edge_id);
-
+    
     auto to_find_itr = to_find.find(current.edge_id);
     if (to_find_itr != to_find.end()) {
       auto index = to_find_itr->second;
@@ -152,11 +198,15 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       auto distance =
           current.distance - edge->length() * (1.0 - to[index].offset);
 
+      // TODO: is it really needed ??? It seems that it is not, driver could get there just due to a U-turn
       // this is needed to handle case when `from` and `to` are on the same
       // edge, but `to` is before `from` by offset
       if (distance >= 0.0) {
         to_find.erase(to_find_itr);
         results[index] = distance;
+        if (to_find.empty()) {
+          break;
+        }
       }
     }
 

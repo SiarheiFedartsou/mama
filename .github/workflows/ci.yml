@@ -36,9 +36,17 @@ jobs:
         make -j8
     - name: Run tests
       run: |
+        # run tests without shortest path table
         mkdir tiles
         ./build/tilegen test/data/monaco-latest.osm.pbf tiles
-        TILES_FOLDER=tiles ./build/tests        
+        TILES_FOLDER=tiles ./build/tests   
+        rm -rf tiles
+
+        # run tests with shortest path table
+        mkdir tiles
+        ./build/tilegen test/data/monaco-latest.osm.pbf tiles --max-precompute-path-length 250
+        TILES_FOLDER=tiles ./build/tests     
+        rm -rf tiles
 
   demo:
     runs-on: ubuntu-22.04
