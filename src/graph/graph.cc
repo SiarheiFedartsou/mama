@@ -12,38 +12,33 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
+#include <s2/encoded_s2shape_index.h>
+#include <s2/s2closest_edge_query.h>
 #include <s2/s2latlng.h>
 #include <s2/s2region_coverer.h>
 #include <s2/s2shapeutil_coding.h>
 #include <s2/util/coding/coder.h>
-#include <s2/encoded_s2shape_index.h>
-#include <s2/s2closest_edge_query.h>
-
 
 namespace mama {
 
 class Tile {
-public:
-  explicit Tile(TileId tile_id, const std::string &path) : tile_id_(tile_id) {
+ public:
+  explicit Tile(TileId tile_id, const std::string& path) : tile_id_(tile_id) {
     std::ifstream str(path);
     header_.ParseFromIstream(&str);
 
-    decoder_ = std::make_unique<Decoder>(header_.shape_spatial_index().data(),
-                                         header_.shape_spatial_index().size());
-    spatial_index_.Init(decoder_.get(),
-                        s2shapeutil::LazyDecodeShapeFactory(decoder_.get()));
+    decoder_ = std::make_unique<Decoder>(header_.shape_spatial_index().data(), header_.shape_spatial_index().size());
+    spatial_index_.Init(decoder_.get(), s2shapeutil::LazyDecodeShapeFactory(decoder_.get()));
   }
 
-  std::vector<Projection> Project(const Coordinate &coordinate,
-                                  double radius_m) {
+  std::vector<Projection> Project(const Coordinate& coordinate, double radius_m) {
     S2ClosestEdgeQuery query(&spatial_index_);
-    query.mutable_options()->set_max_distance(
-        S2Earth::MetersToChordAngle(radius_m));
+    query.mutable_options()->set_max_distance(S2Earth::MetersToChordAngle(radius_m));
     auto point = coordinate.AsS2LatLng().Normalized().ToPoint();
     S2ClosestEdgeQuery::PointTarget target(point);
 
     std::vector<Projection> results;
-    for (const auto &result : query.FindClosestEdges(&target)) {
+    for (const auto& result : query.FindClosestEdges(&target)) {
       auto coordinate = S2LatLng(query.Project(point, result));
       Projection projection;
       projection.point_on_graph.edge_id.tile_id = tile_id_;
@@ -63,15 +58,11 @@ public:
           meters_offset += edge_length;
         }
 
-        meters_offset +=
-            S2Earth::ToMeters(S2LatLng(shape->edge(result.edge_id()).v0)
-                                  .Normalized()
-                                  .GetDistance(coordinate.Normalized()));
+        meters_offset += S2Earth::ToMeters(
+            S2LatLng(shape->edge(result.edge_id()).v0).Normalized().GetDistance(coordinate.Normalized()));
 
-        projection.point_on_graph.offset =
-            meters_offset / edges(result.shape_id()).length();
-        projection.point_on_graph.offset =
-            std::clamp(projection.point_on_graph.offset, 0.0, 1.0);
+        projection.point_on_graph.offset = meters_offset / edges(result.shape_id()).length();
+        projection.point_on_graph.offset = std::clamp(projection.point_on_graph.offset, 0.0, 1.0);
       }
 
       {
@@ -89,13 +80,13 @@ public:
     return results;
   }
 
-  const auto &edges() const { return header_.edges(); }
-  const tile::Edge &edges(int index) const { return header_.edges(index); }
+  const auto& edges() const { return header_.edges(); }
+  const tile::Edge& edges(int index) const { return header_.edges(index); }
 
-  const auto &nodes() const { return header_.nodes(); }
-  const auto &nodes(int index) const { return header_.nodes(index); }
+  const auto& nodes() const { return header_.nodes(); }
+  const auto& nodes(int index) const { return header_.nodes(index); }
 
-  const auto &header() const { return header_; }
+  const auto& header() const { return header_; }
 
   bool shortest_path(const tile::Edge& from_edge, size_t to_edge_index, double* distance) {
     assert(distance);
@@ -111,44 +102,41 @@ public:
     *distance = static_cast<double>(distance_table.distance(std::distance(distance_table.edge_id().begin(), itr)));
     return true;
   }
-private:
+
+ private:
   TileId tile_id_;
   tile::Header header_;
   std::unique_ptr<Decoder> decoder_;
   EncodedS2ShapeIndex spatial_index_;
 };
 
+Graph::Graph(const std::string& tiles_folder) : tiles_folder_(tiles_folder) {}
 
-Graph::Graph(const std::string &tiles_folder) : tiles_folder_(tiles_folder) {}
-
-std::vector<double> Graph::PathDistance(const PointOnGraph &from,
-                                        const std::vector<PointOnGraph> &to,
-                                        const PathOptions &options) {
+std::vector<double> Graph::PathDistance(const PointOnGraph& from,
+                                        const std::vector<PointOnGraph>& to,
+                                        const PathOptions& options) {
   struct Distance {
     double distance = 0.0;
     EdgeId edge_id;
 
-    bool operator<(const Distance &rhs) const {
-      return distance > rhs.distance;
-    }
+    bool operator<(const Distance& rhs) const { return distance > rhs.distance; }
   };
 
   auto from_tile = GetTile(from.edge_id.tile_id);
 
-
   std::vector<double> results;
   results.resize(to.size(), std::numeric_limits<double>::max());
-
 
   absl::flat_hash_map<EdgeId, size_t> to_find;
   to_find.reserve(to.size());
   for (size_t index = 0; index < to.size(); ++index) {
-     if (to[index].edge_id.tile_id == from.edge_id.tile_id) {
+    if (to[index].edge_id.tile_id == from.edge_id.tile_id) {
       if (to[index].edge_id.edge_index == from.edge_id.edge_index && to[index].offset >= from.offset) {
         auto edge = from_tile->edges(to[index].edge_id.edge_index);
         results[index] = edge.length() * (to[index].offset - from.offset);
       } else {
-        bool has_distance_table = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index), to[index].edge_id.edge_index, &results[index]);
+        bool has_distance_table = from_tile->shortest_path(from_tile->edges(from.edge_id.edge_index),
+                                                           to[index].edge_id.edge_index, &results[index]);
         if (has_distance_table) {
           const auto& begin_edge = from_tile->edges(from.edge_id.edge_index);
           const auto& end_edge = from_tile->edges(to[index].edge_id.edge_index);
@@ -165,7 +153,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
         } else {
           to_find[to[index].edge_id] = index;
         }
-       }
+      }
     } else {
       to_find[to[index].edge_id] = index;
     }
@@ -174,7 +162,6 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   if (to_find.empty()) {
     return results;
   }
-
 
   auto init_edge = GetEdge(from.edge_id);
   if (!init_edge) {
@@ -190,13 +177,12 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     queue.pop();
 
     const auto edge = GetEdge(current.edge_id);
-    
+
     auto to_find_itr = to_find.find(current.edge_id);
     if (to_find_itr != to_find.end()) {
       auto index = to_find_itr->second;
 
-      auto distance =
-          current.distance - edge->length() * (1.0 - to[index].offset);
+      auto distance = current.distance - edge->length() * (1.0 - to[index].offset);
 
       // TODO: is it really needed ??? It seems that it is not, driver could get there just due to a U-turn
       // this is needed to handle case when `from` and `to` are on the same
@@ -210,8 +196,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
       }
     }
 
-    auto target_node =
-        GetTargetNode(current.edge_id.tile_id, edge->target_node_id());
+    auto target_node = GetTargetNode(current.edge_id.tile_id, edge->target_node_id());
     if (!target_node) {
       continue;
     }
@@ -219,11 +204,11 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
     auto node = GetNode(*target_node);
 
     // it shouldn't be null, because we already checked it above
-    assert(node); 
+    assert(node);
 
-    for (const auto edge_index: node->adjacent_edges()) {
+    for (const auto edge_index : node->adjacent_edges()) {
       EdgeId adjacent_edge_id{target_node->tile_id, edge_index};
-      
+
       if (!visited.insert(adjacent_edge_id).second) {
         continue;
       }
@@ -242,8 +227,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
   return results;
 }
 
-std::vector<Projection> Graph::Project(const Coordinate &coordinate,
-                                       double radius_m) {
+std::vector<Projection> Graph::Project(const Coordinate& coordinate, double radius_m) {
   auto cells = coverer_.GetCovering(coordinate, radius_m);
 
   std::vector<Projection> results;
@@ -260,12 +244,12 @@ std::vector<Projection> Graph::Project(const Coordinate &coordinate,
   return results;
 }
 
-const tile::Edge *Graph::GetEdge(const EdgeId &edge_id) {
+const tile::Edge* Graph::GetEdge(const EdgeId& edge_id) {
   auto tile = GetTile(edge_id.tile_id);
   return tile ? &tile->edges(static_cast<int>(edge_id.edge_index)) : nullptr;
 }
 
-const tile::Node *Graph::GetNode(const NodeId &node_id) {
+const tile::Node* Graph::GetNode(const NodeId& node_id) {
   auto tile = GetTile(node_id.tile_id);
   return tile ? &tile->nodes(static_cast<int>(node_id.node_index)) : nullptr;
 }
@@ -280,8 +264,7 @@ std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
     }
     // indexes in `neighbour_tile_nodes` are encoded as negative values,
     // 0 is used for usual nodes, so we start counting from -1 (that's why have this -1 here)
-    const auto &neighbor_tile_node =
-        tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
+    const auto& neighbor_tile_node = tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
     return {{neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()}};
   }
 }
@@ -301,4 +284,4 @@ std::shared_ptr<Tile> Graph::GetTile(TileId tile_id) {
   return tile;
 }
 
-} // namespace mama
+}  // namespace mama

@@ -16,4 +16,4 @@ TEST_CASE("AngleDiff works properly") {
   REQUIRE_THAT(AngleDiff(392.0, 710.0), Catch::Matchers::WithinAbs(42.0, 1e-6));
 }
 
-} // namespace mama
+}  // namespace mama

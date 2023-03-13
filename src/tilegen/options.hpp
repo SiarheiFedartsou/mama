@@ -13,11 +13,11 @@ struct Options {
 
   static Options Parse(int argc, char** argv);
 
-private:
+ private:
   Options() = default;
 
   static void PrintUsage(const char* program_name);
   static Options ParseOrThrow(int argc, char** argv);
 };
 
-} // namespace mama::tilegen
+}  // namespace mama::tilegen

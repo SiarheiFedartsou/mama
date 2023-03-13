@@ -25,18 +25,19 @@ struct OSMWay {
 };
 
 struct OSMDataCollector : public osmium::handler::Handler {
-public:
-  void way(const osmium::Way &way);
+ public:
+  void way(const osmium::Way& way);
 
-  void CollectFrom(const std::string &filename);
-private:
-  OnewayDirection getOnewayDirection(const osmium::Way &way) const;
-  bool isWayAccessibleByAuto(const osmium::Way &way) const;
+  void CollectFrom(const std::string& filename);
 
-public:
+ private:
+  OnewayDirection getOnewayDirection(const osmium::Way& way) const;
+  bool isWayAccessibleByAuto(const osmium::Way& way) const;
+
+ public:
   std::unordered_map<ObjectID, size_t> intersections;
   std::vector<OSMWay> ways;
 };
 
-} // namespace tilegen
-} // namespace mama
+}  // namespace tilegen
+}  // namespace mama
