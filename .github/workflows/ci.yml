@@ -15,6 +15,7 @@ jobs:
       run: |
         ./scripts/format.sh
   build:
+    needs: format
     runs-on: ubuntu-22.04
     env: 
       CXX: 'clang++-14'
@@ -56,6 +57,7 @@ jobs:
         rm -rf tiles
 
   demo:
+    needs: format
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
