@@ -22,8 +22,10 @@ Options Options::Parse(int argc, char **argv) {
 
 // static
 void Options::PrintUsage(const char* program_name) {
-  // TODO: more descriptive usage
-  std::cerr << "Usage: " << program_name << " OSMFILE OUTPUTFOLDER\n";
+  std::cerr << "Usage: " << program_name << " [options] <osm_file> <output_folder>\n";
+  std::cerr << "\n";
+  std::cerr << "Options:\n";
+  std::cerr << "  --max-precompute-path-length <value>    Maximum precompute path length\n";
 }
 
 // static

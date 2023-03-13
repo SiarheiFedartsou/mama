@@ -286,7 +286,6 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const Options &cli_
   };
 
   for (auto tile_id : tile_ids) {
-   // int r = 0;
     std::ifstream tile_ifs(cli_options.output_folder + "/" + std::to_string(tile_id) + ".tile");
     mama::tile::Header header;
     header.ParseFromIstream(&tile_ifs);

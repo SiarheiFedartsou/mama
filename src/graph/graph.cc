@@ -165,9 +165,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph &from,
         } else {
           to_find[to[index].edge_id] = index;
         }
-
        }
-      // to_find[to[index].edge_id] = index;
     } else {
       to_find[to[index].edge_id] = index;
     }
