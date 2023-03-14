@@ -50,7 +50,7 @@ class Tile {
       // TODO: how do we optimize this?
       {
         double meters_offset = 0.0;
-        for (size_t edge_id = 0; edge_id < result.edge_id(); ++edge_id) {
+        for (int edge_id = 0; edge_id < result.edge_id(); ++edge_id) {
           auto edge = shape->edge(edge_id);
           auto a = S2LatLng(edge.v0).Normalized();
           auto b = S2LatLng(edge.v1).Normalized();

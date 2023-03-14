@@ -31,7 +31,7 @@ void Options::PrintUsage(const char* program_name) {
 // static
 Options Options::ParseOrThrow(int argc, char** argv) {
   Options options;
-  for (size_t arg_index = 0; arg_index < argc; ++arg_index) {
+  for (int arg_index = 0; arg_index < argc; ++arg_index) {
     std::string arg = argv[arg_index];
     if (arg == "--max-precompute-path-length") {
       if (arg_index + 1 >= argc) {

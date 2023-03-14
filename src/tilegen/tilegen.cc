@@ -95,11 +95,13 @@ class GraphBuilder {
 
   void addEdge(Edge&& edge, const OSMWay& fromWay) {
     {
+#ifndef NDEBUG
       auto length = 0.0;
       for (size_t i = 1; i < edge.shape.size(); ++i) {
         length += edge.shape[i - 1].Distance(edge.shape[i]);
       }
       assert(std::abs(length - edge.distance) < 1e-2);
+#endif
     }
 
     auto fromCoordinate = edge.shape.front();
@@ -183,7 +185,7 @@ class TileBuilder {
   }
 
   ssize_t addNeighbourTileNode(const Node& node) {
-    auto pbfNode = header.add_neighbour_tile_nodes();
+    header.add_neighbour_tile_nodes();
     neighbour_nodes.emplace_back(NeighbourNode{node.getTileId(), node.id});
     return header.neighbour_tile_nodes_size() - 1;
   }
@@ -207,7 +209,7 @@ class TileBuilder {
   }
 
   size_t addNode() {
-    auto pbfNode = header.add_nodes();
+    header.add_nodes();
     return header.nodes_size() - 1;
   }
 
@@ -270,7 +272,7 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const Options& cli_
     mama::tile::Header header;
     header.ParseFromIstream(&tile_ifs);
 
-    for (size_t edge_index = 0; edge_index < header.edges_size(); ++edge_index) {
+    for (size_t edge_index = 0; edge_index < static_cast<size_t>(header.edges_size()); ++edge_index) {
       std::vector<DistanceTableEntry> distance_table;
 
       std::priority_queue<EdgeInfo> queue;
