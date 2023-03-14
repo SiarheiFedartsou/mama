@@ -1,7 +1,11 @@
 # MaMa 
 [![CI](https://github.com/SiarheiFedartsou/mama/actions/workflows/ci.yml/badge.svg)](https://github.com/SiarheiFedartsou/mama/actions/workflows/ci.yml)
 
-MaMa(from **Ma**p **Ma**tcher) library implements realtime map matcher with a target to be able to run on both backend and mobile. 
+
+MaMa (short for Map Matcher) is a library that lets you perform real-time map matching of locations coming from multiple clients as part of distributed system (but in its core it is just a library which can easily be used locally). Main target of MaMa is blazingly fast performance.
+
+⚠️ Warning: This project is currently in its early stage of development and may contain bugs, incomplete features, and other issues. Please use it at your own risk and feel free to report any problems you encounter.
+🌟 If you find this project helpful or interesting, please consider giving it a star! It helps to boost the project's visibility and encourages us to keep improving it. Thank you! 🙏
 
 ##  Quick start & Demo 
 
@@ -49,3 +53,6 @@ Each tile stores metadata about road graph edges accessible by cars in particula
 - Map matching algorithm itself is mainly inspired by "classic" Microsoft paper [`Hidden Markov Map Matching Through Noise and Sparseness`](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/map-matching-ACM-GIS-camera-ready.pdf).
 - Shortest paths precomputation is inspired by [`Fast map matching, an algorithm integrating hidden
 Markov model with precomputation`](https://people.kth.se/~cyang/bib/fmm.pdf) paper.
+
+## License
+MaMa uses [MIT license](https://github.com/SiarheiFedartsou/mama/blob/main/LICENSE).
