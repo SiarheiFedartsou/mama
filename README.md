@@ -36,6 +36,8 @@ In order to work `mama` preprocess OSM data to more convenient representation. `
 
 Each tile stores metadata about road graph edges accessible by cars in particular area and [S2 index](https://s2geometry.io/devguide/s2shapeindex.html) which allows to effectively find projections on road graph. 
 
+`tilegen` also optionally precomputes shortest paths used in map matching algorithm, which significantly boosts runtime performance. 
+
 #### `libmama`
 `libmama` is C++ library implementing core features of `mama`. [`mama_server`](https://github.com/SiarheiFedartsou/mama/blob/cb15123ca81d6712f2cccff06cc842a1b6e2b9ce/server/mama_server.cc#L57) can be a good example of how it should be used. 
 
@@ -44,4 +46,6 @@ Each tile stores metadata about road graph edges accessible by cars in particula
 
 
 ## Credits
-Map matching algorithm itself is mainly inspired by "classic" Microsoft paper [`Hidden Markov Map Matching Through Noise and Sparseness`](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/map-matching-ACM-GIS-camera-ready.pdf).
+- Map matching algorithm itself is mainly inspired by "classic" Microsoft paper [`Hidden Markov Map Matching Through Noise and Sparseness`](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/map-matching-ACM-GIS-camera-ready.pdf).
+- Shortest paths precomputation is inspired by [`Fast map matching, an algorithm integrating hidden
+Markov model with precomputation`](https://people.kth.se/~cyang/bib/fmm.pdf) paper.
