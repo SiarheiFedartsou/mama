@@ -15,47 +15,47 @@ jobs:
       run: |
         sudo apt-get update -y && sudo apt-get -y install clang-format-15
         ./scripts/format.sh
-  # build:
-  #   needs: format
-  #   runs-on: ubuntu-22.04
-  #   env: 
-  #     CXX: 'clang++-14'
-  #     CC: 'clang-14'
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       submodules: 'recursive'
-  #   - name: Install dependencies
-  #     run: |
-  #       sudo apt-get update -y
-  #       sudo apt-get install protobuf-compiler \
-  #                            libprotoc-dev \
-  #                            libprotobuf-dev
-  #   - name: Build
-  #     run: |
-  #       mkdir build
-  #       cd build
-  #       cmake -DCMAKE_BUILD_TYPE=Release ..
-  #       make -j8
-  #   - name: Build server
-  #     run: |
-  #       mkdir -p server/build
-  #       cd server/build
-  #       cmake -DCMAKE_BUILD_TYPE=Release ..
-  #       make -j8
-  #   - name: Run tests
-  #     run: |
-  #       # run tests without shortest path table
-  #       mkdir tiles
-  #       ./build/tilegen test/data/monaco-latest.osm.pbf tiles
-  #       TILES_FOLDER=tiles ./build/tests   
-  #       rm -rf tiles
+  build:
+    needs: format
+    runs-on: ubuntu-22.04
+    env: 
+      CXX: 'clang++-14'
+      CC: 'clang-14'
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install protobuf-compiler \
+                             libprotoc-dev \
+                             libprotobuf-dev
+    - name: Build
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make -j8
+    - name: Build server
+      run: |
+        mkdir -p server/build
+        cd server/build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make -j8
+    - name: Run tests
+      run: |
+        # run tests without shortest path table
+        mkdir tiles
+        ./build/tilegen test/data/monaco-latest.osm.pbf tiles
+        TILES_FOLDER=tiles ./build/tests   
+        rm -rf tiles
 
-  #       # run tests with shortest path table
-  #       mkdir tiles
-  #       ./build/tilegen test/data/monaco-latest.osm.pbf tiles --max-precompute-path-length 250
-  #       TILES_FOLDER=tiles ./build/tests     
-  #       rm -rf tiles
+        # run tests with shortest path table
+        mkdir tiles
+        ./build/tilegen test/data/monaco-latest.osm.pbf tiles --max-precompute-path-length 250
+        TILES_FOLDER=tiles ./build/tests     
+        rm -rf tiles
 
   demo:
     needs: format
