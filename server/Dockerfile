@@ -11,14 +11,18 @@ RUN apt-get update \
     protobuf-compiler \
     libprotoc-dev \
     libprotobuf-dev \
-    lsb-release \
-    gnupg2 \
-    software-properties-common \
-    && wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
-    && apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
-    && apt-get update \
-    && apt-get install -y cmake \
+    wget \
     && rm -rf /var/lib/apt/lists/* 
+
+# build cmake from source
+RUN mkdir -p /build && \
+    cd /build && \
+    wget https://github.com/Kitware/CMake/releases/download/v3.26.0/cmake-3.26.0.tar.gz && \
+    tar -xzf cmake-3.26.0.tar.gz && \
+    cd cmake-3.26.0 && \
+    ./bootstrap && \
+    make -j4 && \
+    make install
 
 ENV CC=clang CXX=clang++
 
