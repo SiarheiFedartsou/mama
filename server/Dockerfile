@@ -2,7 +2,8 @@ FROM ubuntu:22.04 AS builder
 
 COPY . /src
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
     clang \
     libssl-dev \
     pkg-config \
@@ -10,8 +11,19 @@ RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     libprotoc-dev \
     libprotobuf-dev \
-    cmake \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* 
+
+# build cmake from source
+RUN mkdir -p /build && \
+    cd /build && \
+    wget https://github.com/Kitware/CMake/releases/download/v3.26.0/cmake-3.26.0.tar.gz && \
+    tar -xzf cmake-3.26.0.tar.gz && \
+    cd cmake-3.26.0 && \
+    ./bootstrap && \
+    make -j4 && \
+    make install
 
 ENV CC=clang CXX=clang++
 
