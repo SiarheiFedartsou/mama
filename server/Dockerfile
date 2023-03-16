@@ -12,6 +12,7 @@ RUN apt-get update \
     libprotoc-dev \
     libprotobuf-dev \
     wget \
+    build-essential \
     && rm -rf /var/lib/apt/lists/* 
 
 # build cmake from source
