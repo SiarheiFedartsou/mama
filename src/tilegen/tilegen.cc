@@ -22,6 +22,9 @@
 #include "s2/util/coding/coder.h"
 #include "tile.pb.h"
 
+#include "graph/node_id.hpp"
+#include "graph/tile_id.hpp"
+
 namespace mama {
 namespace tilegen {
 
@@ -32,17 +35,18 @@ struct Edge {
   std::vector<Coordinate> shape;
 };
 
-using TileId = uint64_t;
-
 struct Node {
   Coordinate coordinate;
   ObjectID id;
   std::vector<size_t> adjacent_edges;
 
   TileId getTileId() const {
-    S2CellId cellId{S2LatLng::FromDegrees(coordinate.lat(), coordinate.lng())};
-    S2CellId tileCellId = cellId.parent(graph::kTileLevel);
-    return tileCellId.id();
+    S2CellId cell_id{S2LatLng::FromDegrees(coordinate.lat(), coordinate.lng())};
+    S2CellId tile_cell_id = cell_id.parent(graph::kTileLevel);
+
+    TileId tile_id = S2CellIdToTileId(tile_cell_id);
+
+    return tile_id;
   }
 };
 
@@ -185,9 +189,9 @@ class TileBuilder {
   }
 
   ssize_t addNeighbourTileNode(const Node& node) {
-    header.add_neighbour_tile_nodes();
+    header.add_neighbour_tile_node_ids(0);
     neighbour_nodes.emplace_back(NeighbourNode{node.getTileId(), node.id});
-    return header.neighbour_tile_nodes_size() - 1;
+    return header.neighbour_tile_node_ids_size() - 1;
   }
 
   size_t addEdge(const Edge& edge, const std::unordered_map<ObjectID, Node>& nodes) {
@@ -214,9 +218,9 @@ class TileBuilder {
   }
 
   void fixNeighbourTileNodes(const std::unordered_map<TileId, TileBuilder>& otherBuilders) {
-    assert(neighbour_nodes.size() == header.neighbour_tile_nodes_size());
+    assert(neighbour_nodes.size() == header.neighbour_tile_node_ids_size());
     for (size_t index = 0; index < neighbour_nodes.size(); ++index) {
-      auto& pbfNode = *header.mutable_neighbour_tile_nodes(index);
+      auto& pbf_node_id = (*header.mutable_neighbour_tile_node_ids())[index];
       auto& neighbour_node = neighbour_nodes[index];
       auto other_tile_id = neighbour_node.tile_id;
       auto other_node_id = neighbour_node.node_id;
@@ -232,8 +236,10 @@ class TileBuilder {
                                  std::to_string(other_tile_id));
         continue;
       }
-      pbfNode.set_tile_id(other_tile_id);
-      pbfNode.set_node_id(other_node_index->second);
+
+      assert(other_node_index->second < std::numeric_limits<uint32_t>::max());
+
+      pbf_node_id = NodeId{other_tile_id, static_cast<uint32_t>(other_node_index->second)}.value;
     }
   }
 
@@ -327,6 +333,7 @@ void BuildDistanceTables(const std::vector<TileId> tile_ids, const Options& cli_
 
 int main(int argc, char** argv) {
   using namespace mama::tilegen;
+  using namespace mama;
 
   Options cli_options = Options::Parse(argc, argv);
 

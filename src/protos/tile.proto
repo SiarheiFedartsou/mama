@@ -25,14 +25,10 @@ message Node {
     repeated uint32 adjacent_edges = 2;
 }
 
-message NeighbourTileNode {
-    uint64 tile_id = 1;
-    uint32 node_id = 2;
-}
-
 message Header {
     repeated Edge edges = 1;
     repeated Node nodes = 2;
-    repeated NeighbourTileNode neighbour_tile_nodes = 3;
+    // contains (tile_id << 32) | node_id
+    repeated uint64 neighbour_tile_node_ids = 3;
     bytes shape_spatial_index = 4;
 }

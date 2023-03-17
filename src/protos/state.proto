@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 message EdgeId {
-    uint64 tile_id = 1;
+    uint32 tile_id = 1;
     uint32 edge_index = 2;
 }
 
