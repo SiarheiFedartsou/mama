@@ -15,67 +15,96 @@ jobs:
       run: |
         sudo apt-get update -y && sudo apt-get -y install clang-format-15
         ./scripts/format.sh
-  build:
-    needs: format
+  docker:
     runs-on: ubuntu-22.04
-    env: 
-      CXX: 'clang++-14'
-      CC: 'clang-14'
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
-    - name: Install dependencies
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install protobuf-compiler \
-                             libprotoc-dev \
-                             libprotobuf-dev
-    - name: Build
-      run: |
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=Release ..
-        make -j8
-    - name: Build server
-      run: |
-        mkdir -p server/build
-        cd server/build
-        cmake -DCMAKE_BUILD_TYPE=Release ..
-        make -j8
-    - name: Run tests
-      run: |
-        # run tests without shortest path table
-        mkdir tiles
-        ./build/tilegen test/data/monaco-latest.osm.pbf tiles
-        TILES_FOLDER=tiles ./build/tests   
-        rm -rf tiles
-
-        # run tests with shortest path table
-        mkdir tiles
-        ./build/tilegen test/data/monaco-latest.osm.pbf tiles --max-precompute-path-length 250
-        TILES_FOLDER=tiles ./build/tests     
-        rm -rf tiles
-
-  demo:
-    needs: format
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v3
+    - name: Log in to the Container registry
+      uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
-        submodules: 'recursive'
-    - name: Check protos
-      run: cmp --silent server/mama.proto demo/protos/mama.proto || (echo "Demo and server use different protos" && exit 1)
-    - name: Build
-      run: |
-        sudo apt-get update -y && sudo apt-get install osmium-tool
-        cd demo && ./build.sh
-    - name: Test
-      run: |
-        cd demo && ./test.sh
-    - name: Benchmark
-      run: |
-        cd demo && npm install && ./benchmark.sh
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+    - name: Build and push Docker image
+      uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+      with:
+        context: .
+        file: server/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+  # build:
+  #   needs: format
+  #   runs-on: ubuntu-22.04
+  #   env: 
+  #     CXX: 'clang++-14'
+  #     CC: 'clang-14'
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       submodules: 'recursive'
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt-get update -y
+  #       sudo apt-get install protobuf-compiler \
+  #                            libprotoc-dev \
+  #                            libprotobuf-dev
+  #   - name: Build
+  #     run: |
+  #       mkdir build
+  #       cd build
+  #       cmake -DCMAKE_BUILD_TYPE=Release ..
+  #       make -j8
+  #   - name: Build server
+  #     run: |
+  #       mkdir -p server/build
+  #       cd server/build
+  #       cmake -DCMAKE_BUILD_TYPE=Release ..
+  #       make -j8
+  #   - name: Run tests
+  #     run: |
+  #       # run tests without shortest path table
+  #       mkdir tiles
+  #       ./build/tilegen test/data/monaco-latest.osm.pbf tiles
+  #       TILES_FOLDER=tiles ./build/tests   
+  #       rm -rf tiles
+
+  #       # run tests with shortest path table
+  #       mkdir tiles
+  #       ./build/tilegen test/data/monaco-latest.osm.pbf tiles --max-precompute-path-length 250
+  #       TILES_FOLDER=tiles ./build/tests     
+  #       rm -rf tiles
+
+  # demo:
+  #   needs: format
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       submodules: 'recursive'
+  #   - name: Check protos
+  #     run: cmp --silent server/mama.proto demo/protos/mama.proto || (echo "Demo and server use different protos" && exit 1)
+  #   - name: Build
+  #     run: |
+  #       sudo apt-get update -y && sudo apt-get install osmium-tool
+  #       cd demo && ./build.sh
+  #   - name: Test
+  #     run: |
+  #       cd demo && ./test.sh
+  #   - name: Benchmark
+  #     run: |
+  #       cd demo && npm install && ./benchmark.sh
     
 
          
