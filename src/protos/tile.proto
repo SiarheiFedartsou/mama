@@ -28,7 +28,7 @@ message Node {
 message Header {
     repeated Edge edges = 1;
     repeated Node nodes = 2;
-    // contains (tile_id << 32) | node_id
+    // contains (tile_id << 38) | node_id (see `kTileIdBitSize`)
     repeated uint64 neighbour_tile_node_ids = 3;
     bytes shape_spatial_index = 4;
 }
