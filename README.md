@@ -16,8 +16,9 @@ cd tiles
 # download OSM data
 wget http://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
 # generate mama tiles
-docker run -t -v $(pwd)/tiles:/tiles ghcr.io/SiarheiFedartsou/mama tilegen /tiles/berlin-latest.osm.pbf /tiles
-docker run -t -v $(pwd)/tiles:/tiles ghcr.io/SiarheiFedartsou/mama -p 50051:50051 mama_server /tiles 
+docker run -t -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:main tilegen /tiles/berlin-latest.osm.pbf /tiles
+# run mama-server
+docker run -t -p 50051:50051 -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:main mama_server /tiles 
 ```
 
 This service exposes API via [gRPC](https://grpc.io/), so you have to use gRPC client to access it(see [mama.proto](https://github.com/SiarheiFedartsou/mama/blob/main/server/mama.proto) for service definition). For test purposes it can be done with [`grpc_cli`](https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md):
