@@ -44,6 +44,21 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+    - name: Test Docker Image:
+      run: 
+        mkdir tiles
+        cd tiles
+        # download OSM data
+        wget http://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
+        # generate mama tiles
+        docker run -t -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:main tilegen /tiles/berlin-latest.osm.pbf /tiles
+        # run mama-server
+        docker run --name=mama-container -t -p 50051:50051 -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:main mama_server /tiles &
+
+        sudo apt-get -y update && sudo apt-get -y install grpc
+        grpc_cli ls localhost:50051
+        # TODO: call grpc
+        docker stop mama-container
 
   build:
     needs: format

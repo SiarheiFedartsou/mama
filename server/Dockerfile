@@ -45,3 +45,4 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/local/bin/tilegen /usr/local/bin/mama_server /usr/local/bin/
+COPY /server/mama.proto /mama/mama.proto
