@@ -8,13 +8,21 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "Use C++20 by default")
 
 find_package(ZLIB REQUIRED)
-add_subdirectory(thirdparty/abseil-cpp)
-add_subdirectory(thirdparty/s2geometry)
+add_subdirectory(thirdparty/abseil-cpp SYSTEM)
+add_subdirectory(thirdparty/s2geometry SYSTEM)
 
 # protobuf
 find_package(Protobuf REQUIRED)
 # for generated headers
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS src/protos/tile.proto src/protos/state.proto)
+
+add_library(generated_proto 
+    STATIC
+    ${PROTO_SRCS}
+    ${PROTO_HDRS}
+)
+target_link_libraries(generated_proto PRIVATE ${Protobuf_LIBRARIES}) 
+target_include_directories(generated_proto SYSTEM PUBLIC ${Protobuf_INCLUDE_DIRS})
 
 add_executable(
     tilegen 
@@ -23,17 +31,13 @@ add_executable(
     src/tilegen/osm_data_collector.cc  
     src/tilegen/options.hpp 
     src/tilegen/options.cc
-    ${PROTO_SRCS} 
-    ${PROTO_HDRS}
 )
-
-target_link_libraries(tilegen PRIVATE s2 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
+target_link_libraries(tilegen PRIVATE s2 generated_proto ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES}) 
 target_include_directories(tilegen 
     PRIVATE 
         src
     SYSTEM PRIVATE 
-        ${CMAKE_CURRENT_BINARY_DIR} 
-        ${Protobuf_INCLUDE_DIRS} 
+        ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/protozero/include 
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/libosmium/include  
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
@@ -41,14 +45,13 @@ target_include_directories(tilegen
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/spdlog/include
 )
 
-add_library(mama src/mama.cc src/graph/graph.cc src/graph/coverer.cc ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(mama PUBLIC s2 PRIVATE ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${Protobuf_LIBRARIES}) 
+add_library(mama src/mama.cc src/graph/graph.cc src/graph/coverer.cc)
+target_link_libraries(mama PUBLIC s2 PRIVATE generated_proto ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES}) 
 target_include_directories(
     mama 
     PRIVATE src 
     SYSTEM PRIVATE 
-        ${CMAKE_CURRENT_BINARY_DIR} 
-        ${Protobuf_INCLUDE_DIRS} 
+        ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/spdlog/include
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/geometry.hpp/include
         ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include
@@ -63,3 +66,10 @@ target_include_directories(tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/thirdparty/cheap-ruler-cpp/include)
 
 install(TARGETS tilegen DESTINATION bin)
+
+
+
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/warnings.cmake)
+configure_warnings(tilegen)
+configure_warnings(mama)
+configure_warnings(tests)

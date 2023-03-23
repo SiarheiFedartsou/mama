@@ -5,6 +5,8 @@
 #include <vector>
 #include "base/coordinate.hpp"
 #include "coverer.hpp"
+#include "edge_id.hpp"
+#include "node_id.hpp"
 
 namespace mama {
 
@@ -12,25 +14,6 @@ namespace tile {
 class Edge;
 class Node;
 }  // namespace tile
-
-using TileId = uint64_t;
-
-struct EdgeId {
-  TileId tile_id = 0;
-  uint32_t edge_index = 0;
-
-  bool operator==(const EdgeId& other) const { return tile_id == other.tile_id && edge_index == other.edge_index; }
-
-  template <typename H>
-  friend H AbslHashValue(H h, const EdgeId& e) {
-    return H::combine(std::move(h), e.tile_id, e.edge_index);
-  }
-};
-
-struct NodeId {
-  TileId tile_id = 0;
-  uint32_t node_index = 0;
-};
 
 struct PointOnGraph {
   EdgeId edge_id;

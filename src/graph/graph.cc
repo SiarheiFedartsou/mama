@@ -50,7 +50,7 @@ class Tile {
       // TODO: how do we optimize this?
       {
         double meters_offset = 0.0;
-        for (size_t edge_id = 0; edge_id < result.edge_id(); ++edge_id) {
+        for (int edge_id = 0; edge_id < result.edge_id(); ++edge_id) {
           auto edge = shape->edge(edge_id);
           auto a = S2LatLng(edge.v0).Normalized();
           auto b = S2LatLng(edge.v1).Normalized();
@@ -207,7 +207,7 @@ std::vector<double> Graph::PathDistance(const PointOnGraph& from,
     assert(node);
 
     for (const auto edge_index : node->adjacent_edges()) {
-      EdgeId adjacent_edge_id{target_node->tile_id, edge_index};
+      EdgeId adjacent_edge_id{target_node->tile_id(), edge_index};
 
       if (!visited.insert(adjacent_edge_id).second) {
         continue;
@@ -233,8 +233,7 @@ std::vector<Projection> Graph::Project(const Coordinate& coordinate, double radi
   std::vector<Projection> results;
   for (const auto cellId : cells) {
     assert(cellId.level() == graph::kTileLevel);
-
-    auto tile = GetTile(cellId.id());
+    auto tile = GetTile(S2CellIdToTileId(cellId));
     if (!tile) {
       continue;
     }
@@ -250,8 +249,8 @@ const tile::Edge* Graph::GetEdge(const EdgeId& edge_id) {
 }
 
 const tile::Node* Graph::GetNode(const NodeId& node_id) {
-  auto tile = GetTile(node_id.tile_id);
-  return tile ? &tile->nodes(static_cast<int>(node_id.node_index)) : nullptr;
+  auto tile = GetTile(node_id.tile_id());
+  return tile ? &tile->nodes(static_cast<int>(node_id.node_index())) : nullptr;
 }
 
 std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
@@ -262,10 +261,10 @@ std::optional<NodeId> Graph::GetTargetNode(TileId tile_id, ssize_t node_index) {
     if (!tile) {
       return {};
     }
-    // indexes in `neighbour_tile_nodes` are encoded as negative values,
+    // indexes in `neighbour_tile_node_ids` are encoded as negative values,
     // 0 is used for usual nodes, so we start counting from -1 (that's why have this -1 here)
-    const auto& neighbor_tile_node = tile->header().neighbour_tile_nodes(static_cast<int>(-node_index - 1));
-    return {{neighbor_tile_node.tile_id(), neighbor_tile_node.node_id()}};
+    auto neighbor_tile_node_id = tile->header().neighbour_tile_node_ids(static_cast<int>(-node_index - 1));
+    return {NodeId{neighbor_tile_node_id}};
   }
 }
 
