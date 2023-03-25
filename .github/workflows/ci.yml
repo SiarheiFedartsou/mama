@@ -56,6 +56,8 @@ jobs:
         # run mama-server
         docker run --name=mama-container -t -p 50051:50051 -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:main mama_server /tiles &
 
+        sleep 10
+        
         docker pull fullstorydev/grpcurl:latest
         docker run fullstorydev/grpcurl localhost:50051 list
 
