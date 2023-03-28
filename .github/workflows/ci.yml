@@ -53,7 +53,7 @@ jobs:
         # download OSM data
         wget -q http://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
         # generate mama tiles
-        docker run -t -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:${{ steps.meta.outputs.tags.first }} tilegen /tiles/berlin-latest.osm.pbf /tiles
+        docker run -t -v $(pwd):/tiles ${{ steps.meta.outputs.tags.first }} tilegen /tiles/berlin-latest.osm.pbf /tiles
         # run mama-server
         docker run --name=mama-container --rm -t -p 50051:50051 -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:${{ steps.meta.outputs.tags.first }} mama_server /tiles &
 
