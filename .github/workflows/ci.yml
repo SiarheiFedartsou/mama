@@ -62,7 +62,7 @@ jobs:
         docker run --network=host --name=mama-container --rm -t -p 50051:50051 -v $(pwd):/tiles $DOCKER_IMAGE_NAME mama_server /tiles &
 
         sleep 10
-        docker run --network=host fullstorydev/grpcurl -plaintext -d '{"entries": [{"location": {"latitude": 52.517037, "longitude": 13.388860}}]}' host.docker.internal:50051 mama.server.api.MamaService.Match
+        docker run --network=host fullstorydev/grpcurl -plaintext -d '{"entries": [{"location": {"latitude": 52.517037, "longitude": 13.388860}}]}' 172.17.0.1:50051 mama.server.api.MamaService.Match
         # TODO: call grpc
         docker stop mama-container
 
