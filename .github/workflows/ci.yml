@@ -47,7 +47,6 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
     - name: Test Docker Image
       run: |
-        echo "XTAGSX: ${{ steps.meta.outputs.tags }}"
         mkdir tiles
         cd tiles
         # download OSM data
@@ -58,10 +57,7 @@ jobs:
         docker run --network=host --name=mama-container --rm -t -p 50051:50051 -v $(pwd):/tiles ${{ steps.meta.outputs.tags }} mama_server /tiles &
 
         sleep 10
-        
-        docker pull fullstorydev/grpcurl:latest
-        docker run --network=host --rm -t fullstorydev/grpcurl -plaintext localhost:50051 list
-
+        docker run fullstorydev/grpcurl -plaintext -d '{"entries": [{"location": {"latitude": 52.517037, "longitude": 13.388860}}]}' host.docker.internal:50051 mama.server.api.MamaService.Match
         # TODO: call grpc
         docker stop mama-container
 
