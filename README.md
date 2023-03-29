@@ -21,10 +21,37 @@ docker run -t -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:main tilegen /tiles
 docker run -t -p 50051:50051 -v $(pwd):/tiles ghcr.io/siarheifedartsou/mama:main mama_server /tiles 
 ```
 
-This service exposes API via [gRPC](https://grpc.io/), so you have to use gRPC client to access it(see [mama.proto](https://github.com/SiarheiFedartsou/mama/blob/main/server/mama.proto) for service definition). For test purposes it can be done with [`grpc_cli`](https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md):
-
+This service exposes API via [gRPC](https://grpc.io/), so you have to use gRPC client to access it(see [mama.proto](https://github.com/SiarheiFedartsou/mama/blob/main/server/mama.proto) for service definition). For test purposes it can be done with [`grpcurl`](https://github.com/fullstorydev/grpcurl):
 ```
-grpc_cli call localhost:50051 Match "entries: [{location: {latitude: 52.517037, longitude: 13.388860}}]"
+docker run fullstorydev/grpcurl \
+  -plaintext \
+  -d '{"entries": [{"location": {"latitude": 52.517037, "longitude": 13.388860, "timestamp": "2023-01-01T00:00:00Z"}}]}' \
+  host.docker.internal:50051 \
+  mama.server.api.MamaService.Match
+```
+It should output something like:
+```
+{
+  "entries": [
+    {
+      "location": {
+        "timestamp": "2023-01-01T00:00:00Z",
+        "latitude": 52.51703335973838,
+        "longitude": 13.38879800553748,
+        "bearing": 354.47464844888776
+      },
+      "state": "ChYKDwoICMfC+ggQsk4VYb4bPxXuZgi/ChYKDwoICMfC+ggQ6U8V5TLCPhXuZgi/ChYKDwoICMfC+ggQsk4V/xUHPxVdNkK/ChYKDwoICMfC+ggQ6U8VqYPrPhVdNkK/ChYKDwoICMfC+ggQojAVfiZuPxXDgaDAChYKDwoICMfC+ggQ60MVwmd9PxWFtLDAChEKCgoICMfC+ggQ508VhbSwwAoRCgoKCAjHwvoIEOhPFYW0sMAKFgoPCggIx8L6CBCiMBUm40c/FSLD48AKFgoPCggIx8L6CBCiMBWosi0/FSi1L8EKFgoPCggIx8L6CBDoTxXF60Q+FV6MQMEKFgoPCggIx8L6CBCxThVt/oM9FUrOSMEKFgoPCggIx8L6CBCQQRWYL38/FSnjVcEKFgoPCggIx8L6CBCuThWX9H4/FSnjVcEKEQoKCggIx8L6CBCwThUp41XBChYKDwoICMfC+ggQsU4V+4wXPhX5yV7BChYKDwoICMfC+ggQ60MVrQc9PxVh8pDBChYKDwoICMfC+ggQ508VKcCAPhVh8pDBEhoKBgiAmsOdBhE26bZELkJKQBnzcW2oGMcqQBolCgYIgJrDnQYROIItJi5CSkAZJxE9iBDHKkAiCQkf0fgomCd2QA=="
+    }
+  ]
+}
+```
+Note `state` field, it encodes map matching state for particular vehicle. You can pass this state field in subsequent requests to take advantage of the knowledge of past vehicle locations:
+```
+docker run fullstorydev/grpcurl \
+  -plaintext \
+  -d '{"entries": [{"state": "ChYKDwoICMfC+ggQsk4VYb4bPxXuZgi/ChYKDwoICMfC+ggQ6U8V5TLCPhXuZgi/ChYKDwoICMfC+ggQsk4V/xUHPxVdNkK/ChYKDwoICMfC+ggQ6U8VqYPrPhVdNkK/ChYKDwoICMfC+ggQojAVfiZuPxXDgaDAChYKDwoICMfC+ggQ60MVwmd9PxWFtLDAChEKCgoICMfC+ggQ508VhbSwwAoRCgoKCAjHwvoIEOhPFYW0sMAKFgoPCggIx8L6CBCiMBUm40c/FSLD48AKFgoPCggIx8L6CBCiMBWosi0/FSi1L8EKFgoPCggIx8L6CBDoTxXF60Q+FV6MQMEKFgoPCggIx8L6CBCxThVt/oM9FUrOSMEKFgoPCggIx8L6CBCQQRWYL38/FSnjVcEKFgoPCggIx8L6CBCuThWX9H4/FSnjVcEKEQoKCggIx8L6CBCwThUp41XBChYKDwoICMfC+ggQsU4V+4wXPhX5yV7BChYKDwoICMfC+ggQ60MVrQc9PxVh8pDBChYKDwoICMfC+ggQ508VKcCAPhVh8pDBEhoKBgiAmsOdBhE26bZELkJKQBnzcW2oGMcqQBolCgYIgJrDnQYROIItJi5CSkAZJxE9iBDHKkAiCQkf0fgomCd2QA==", "location": {"latitude": 52.517301, "longitude": 13.38884, "timestamp": "2023-01-01T00:00:03Z"}}]}' \
+  host.docker.internal:50051 \
+  mama.server.api.MamaService.Match
 ```
 
 See our [demo](./demo) for example of real life usage.
