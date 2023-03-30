@@ -52,6 +52,7 @@ target_link_libraries(mama_server
     PRIVATE
     mama
     mama_grpc_proto
+    # `-Wl,--whole-archive` is needed to link all symbols from gRPC reflection library - otherwise it doesn't work
     -Wl,--whole-archive
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
