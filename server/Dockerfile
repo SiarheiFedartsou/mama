@@ -12,6 +12,7 @@ RUN apt-get update \
     libprotoc-dev \
     libprotobuf-dev \
     curl \
+    build-essential \
     && rm -rf /var/lib/apt/lists/* 
 
 # install CMake
