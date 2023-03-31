@@ -11,19 +11,15 @@ RUN apt-get update \
     protobuf-compiler \
     libprotoc-dev \
     libprotobuf-dev \
-    wget \
+    curl \
     build-essential \
     && rm -rf /var/lib/apt/lists/* 
 
-# build cmake from source
-RUN mkdir -p /build && \
-    cd /build && \
-    wget https://github.com/Kitware/CMake/releases/download/v3.26.0/cmake-3.26.0.tar.gz && \
-    tar -xzf cmake-3.26.0.tar.gz && \
-    cd cmake-3.26.0 && \
-    ./bootstrap && \
-    make -j4 && \
-    make install
+# install CMake
+RUN curl -sLO https://github.com/Kitware/CMake/releases/download/v3.26.1/cmake-3.26.1-Linux-$(arch).sh && \
+    chmod +x cmake-3.26.1-Linux-*.sh && \
+    ./cmake-3.26.1-Linux-*.sh --skip-license --prefix=/usr/local && \
+    rm cmake-3.26.1-Linux-*.sh
 
 ENV CC=clang CXX=clang++
 
